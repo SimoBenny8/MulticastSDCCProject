@@ -1,0 +1,14 @@
+syntax = "proto3";
+option go_package=".";
+
+service PacketService {
+  rpc SendPacket(Packet) returns (ResponsePacket) {}
+}
+
+message Packet{
+  bytes Message = 1;
+}
+
+message ResponsePacket{
+  bytes ack = 1;
+}
