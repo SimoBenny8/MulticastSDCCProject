@@ -1,10 +1,12 @@
-package pkg
+package client
 
 import (
 	"MulticastSDCCProject/pkg/rpc"
 	"context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"log"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -15,10 +17,10 @@ type Client struct {
 }
 
 //connect with delay
-func Connect(address string, delay uint) *Client {
-	if delay > 0 {
-		time.Sleep(time.Second * time.Duration(delay))
-	}
+func Connect(address string) *Client {
+
+	go time.Sleep(time.Duration(rand.Intn(1700) + 5))
+
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial(address, opts)
 	if err != nil {
@@ -32,13 +34,22 @@ func Connect(address string, delay uint) *Client {
 }
 
 //method to send message
-func (c *Client) Send(messageHeader map[string]string, payload []byte) error {
-	log.Println("Sending message from ", c.Connection.Target())
-	_, err := c.Client.SendPacket(context.Background(), &rpc.Packet{Message: payload})
+func (c *Client) Send(messageMetadata map[string]string, payload []byte, respChannel chan []byte) error {
+	log.Println("Sender: ", c.Connection.Target())
+	go time.Sleep(time.Duration(rand.Intn(3700) + 5))
+	md := metadata.New(messageMetadata)
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+	_, err := c.Client.SendPacket(ctx, &rpc.Packet{Message: payload})
 	if err != nil {
 		log.Println(err.Error())
 		return err
 	}
+	//invio ack
+	if respChannel != nil {
+		ack := "Message received: " + string(payload)
+		respChannel <- []byte(ack)
+	}
+
 	return err
 }
 
@@ -53,10 +64,10 @@ func (c *Client) CloseConnection() error {
 }
 
 //connect with delay
-func ConnectWithWaitGroup(address string, delay uint, wg *sync.WaitGroup) *Client {
-	if delay > 0 {
-		time.Sleep(time.Second * time.Duration(delay))
-	}
+func ConnectWithWaitGroup(address string, wg *sync.WaitGroup) *Client {
+
+	go time.Sleep(time.Duration(rand.Intn(700) + 5))
+
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial(address, opts)
 	if err != nil {
