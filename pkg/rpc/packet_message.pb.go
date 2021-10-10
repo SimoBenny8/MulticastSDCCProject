@@ -25,7 +25,7 @@ type Packet struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Message []byte `protobuf:"bytes,1,opt,name=Message,proto3" json:"Message,omitempty"`
+	Message []byte `protobuf:"bytes,1,opt,name=OPacket,proto3" json:"OPacket,omitempty"`
 }
 
 func (x *Packet) Reset() {

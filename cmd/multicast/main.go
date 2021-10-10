@@ -1,7 +1,8 @@
 package main
 
 import (
-	"MulticastSDCCProject/pkg"
+	"MulticastSDCCProject/pkg/endToEnd/client"
+	"MulticastSDCCProject/pkg/endToEnd/server"
 	"log"
 	"sync"
 )
@@ -13,13 +14,13 @@ func main() {
 	addressGroups := []string{"node1:8090", "node2:8091", "node3:8092"} //"node1:8090", "node2:8091",
 
 	go func() {
-		err := pkg.RunServer(8090)
+		err := server.RunServer(8090)
 		if err != nil {
 			log.Println("Error in connection")
 			return
 		}
 	}()
-	Connections := [3]*pkg.Client{}
+	Connections := [3]*client.Client{}
 	//creo il cluster di nodi (docker compose)
 	// ogni connessione avrà la propria goroutine
 	//il numero di nodi connessi e concorrenti è limitato dalla size del threadpool
@@ -28,7 +29,7 @@ func main() {
 	index := 0
 	for i := 0; i < numNodes; i++ {
 		wg.Add(1)
-		c := pkg.ConnectWithWaitGroup(addressGroups[i], 1, &wg)
+		c := client.ConnectWithWaitGroup(addressGroups[i], &wg)
 		wg.Wait()
 		// deve tornare il riferimento alla connessione del client
 		Connections[i] = c
@@ -46,7 +47,7 @@ func main() {
 			wg.Add(1)
 			go func() {
 				var localErr error
-				localErr = Connections[j].Send(metadata, payload)
+				localErr = Connections[j].Send(metadata, payload, nil)
 
 				if localErr != nil {
 					err = localErr
