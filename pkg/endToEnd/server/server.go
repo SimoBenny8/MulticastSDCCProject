@@ -1,8 +1,8 @@
 package server
 
 import (
+	"MulticastSDCCProject/pkg/MulticastScalarClock/impl"
 	"MulticastSDCCProject/pkg/SQMulticast"
-	"MulticastSDCCProject/pkg/multicastScalarClock/impl"
 	"MulticastSDCCProject/pkg/rpc"
 	"context"
 	"fmt"
@@ -85,24 +85,17 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			switch values := md.Get(SQMulticast.TYPEMC); values[0] {
 			case SQMulticast.SCMULTICAST:
 				log.Println("case SCMulticast")
+				impl.ReceiveMessage(message)
 			case SQMulticast.SQMULTICAST:
 				log.Println("case SQMulticast")
 				if md.Get(SQMulticast.TYPENODE)[0] == SQMulticast.MEMBER {
-					if SQMulticast.LocalTimestamp == 0 {
-						SQMulticast.InitTimestamp()
-						SQMulticast.InitMessageQueue()
-						SQMulticast.UpdateTimestamp()
-						messageT := &SQMulticast.MessageT{Message: *message, Timestamp: SQMulticast.LocalTimestamp}
-						SQMulticast.MessageQueue = append(SQMulticast.MessageQueue, *messageT)
-						go SQMulticast.DeliverSeq()
-					} else {
-						SQMulticast.UpdateTimestamp()
-						messageT := &SQMulticast.MessageT{Message: *message, Timestamp: SQMulticast.LocalTimestamp}
-						SQMulticast.MessageQueue = append(SQMulticast.MessageQueue, *messageT)
-						go SQMulticast.DeliverSeq()
-					}
-				} else if md.Get(SQMulticast.TYPENODE)[0] == SQMulticast.SEQUENCER { //arriva dal sequencer
+					log.Println("Timestamp:", SQMulticast.LocalTimestamp)
 					log.Println("deliver called for message: " + string(message.Message))
+				} else if md.Get(SQMulticast.TYPENODE)[0] == SQMulticast.SEQUENCER { //arriva al sequencer
+					SQMulticast.UpdateTimestamp()
+					log.Println("Timestamp:", SQMulticast.LocalTimestamp)
+					messageT := &SQMulticast.MessageT{Message: *message, Timestamp: SQMulticast.LocalTimestamp, Id: md.Get(SQMulticast.MESSAGEID)[0]}
+					SQMulticast.MessageQueue = append(SQMulticast.MessageQueue, *messageT)
 				}
 			case SQMulticast.BMULTICAST:
 				log.Println("case BMulticast")

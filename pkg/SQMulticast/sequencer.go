@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -25,6 +26,7 @@ const (
 type MessageT struct {
 	Message   rpc.Packet
 	Timestamp uint32
+	Id        string
 }
 
 var LocalTimestamp uint32
@@ -46,53 +48,40 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func InitTimestamp() {
-	LocalTimestamp = 0
-}
-
 func UpdateTimestamp() {
 	LocalTimestamp += 1
 }
 
-/*func ReceiveMessage(messageCh chan rpc.Packet){
-	select{
-		case <- messageCh:
-			LocalTimestamp += 1
-			messageWithT := &MessageT{Message: <-messageCh,Timestamp: LocalTimestamp}
-			MessageQueue = append(MessageQueue,*messageWithT)
-			if len(MessageQueue) > 1{
-				sort.Slice(MessageQueue, func(i, j int) bool {
-					return MessageQueue[i].Timestamp < MessageQueue[j].Timestamp
-				})
-			}
-
-
-	}
-}*/
-
 func DeliverSeq() {
-	//mettere waitgroup
-	if len(MessageQueue) > 0 {
-		message := MessageQueue[0]
-		if len(MessageQueue) > 1 {
+	rand.Seed(time.Now().UnixNano())
+	var wg sync.WaitGroup
+	for {
+		if len(MessageQueue) > 0 {
+			message := MessageQueue[0]
 			MessageQueue = MessageQueue[1:]
-		}
-		for i := range Connections {
-			if Connections[i].Connection.Target() != SeqPort.Connection.Target() {
+			for i := range Connections {
+				wg.Add(1)
 				//caso invio al sequencer da un nodo generico
-				md := make(map[string]string)
-				md[TYPEMC] = SQMULTICAST
-				md[TYPENODE] = SEQUENCER //da chi arriva
-				go time.Sleep(time.Duration(rand.Intn(3700) + 5))
-				metaData := metadata.New(md)
-				ctx := metadata.NewOutgoingContext(context.Background(), metaData)
-				_, LocalErr = Connections[i].Client.SendPacket(ctx, &message.Message)
-				if LocalErr != nil {
-					log.Println(LocalErr.Error())
-				}
-			} else {
-				continue
+				i := i
+				go func() {
+					defer wg.Done()
+					md := make(map[string]string)
+					md[TYPEMC] = SQMULTICAST
+					md[TYPENODE] = MEMBER //a chi arriva
+					md[MESSAGEID] = message.Id
+					delay := rand.Intn(10700) + 1000
+					//log.Println("Delay: ",delay," milliseconds")
+					time.Sleep(time.Duration(delay))
+					metaData := metadata.New(md)
+					ctx := metadata.NewOutgoingContext(context.Background(), metaData)
+					_, LocalErr = Connections[i].Client.SendPacket(ctx, &message.Message)
+					if LocalErr != nil {
+						log.Println(LocalErr.Error())
+					}
+				}()
 			}
+			wg.Wait()
 		}
+
 	}
 }

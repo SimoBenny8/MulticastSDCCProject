@@ -6,7 +6,6 @@ import (
 	"MulticastSDCCProject/pkg/endToEnd/server"
 	"bufio"
 	"flag"
-	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -15,7 +14,7 @@ import (
 
 func main() {
 	port := flag.Uint("port", 8090, "server port number")
-	group := flag.String("groupPort", "8091,8092,8093", "defining group port")
+	group := flag.String("groupPort", "8090,8091,8092", "defining group port")
 
 	flag.Parse()
 
@@ -34,6 +33,7 @@ func main() {
 	var connections []*client.Client
 
 	groupArray = strings.Split(*group, ",")
+	//myAddress := "localhost:"+ strconv.Itoa(int(*port))
 
 	connections = make([]*client.Client, len(groupArray))
 	rand.Seed(int64(len(groupArray)))
@@ -53,10 +53,11 @@ func main() {
 		log.Println("Sequencer is", SQMulticast.SeqPort.Connection.Target())
 	}
 
+	go SQMulticast.DeliverSeq()
 	//implemento invio messaggio
 	for {
 		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Println("Insert message: ")
+		log.Println("Insert message: ")
 		for scanner.Scan() {
 
 			for i := range connections {
@@ -64,14 +65,10 @@ func main() {
 					//caso invio al sequencer da un nodo generico
 					md := make(map[string]string)
 					md[SQMulticast.TYPEMC] = SQMulticast.SQMULTICAST
-					md[SQMulticast.TYPENODE] = SQMulticast.MEMBER //da chi arriva
+					md[SQMulticast.TYPENODE] = SQMulticast.SEQUENCER //a chi arriva
 					md[SQMulticast.MESSAGEID] = SQMulticast.RandSeq(5)
 					localErr = connections[i].Send(md, scanner.Bytes(), nil)
-				} else {
-					log.Println("Impossible to send message from Sequencer")
-					continue
 				}
-
 			}
 
 		}

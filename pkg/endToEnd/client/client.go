@@ -19,7 +19,7 @@ type Client struct {
 //connect with delay
 func Connect(address string) *Client {
 
-	go time.Sleep(time.Duration(rand.Intn(1700) + 5))
+	//go time.Sleep(time.Duration(rand.Intn(1700) + 5))
 
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial(address, opts)
@@ -36,7 +36,7 @@ func Connect(address string) *Client {
 //method to send message
 func (c *Client) Send(messageMetadata map[string]string, payload []byte, respChannel chan []byte) error {
 	log.Println("Sender: ", c.Connection.Target())
-	go time.Sleep(time.Duration(rand.Intn(3700) + 5))
+	time.Sleep(time.Duration(rand.Intn(20700) + 500))
 	md := metadata.New(messageMetadata)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	_, err := c.Client.SendPacket(ctx, &rpc.Packet{Message: payload})
@@ -66,7 +66,7 @@ func (c *Client) CloseConnection() error {
 //connect with delay
 func ConnectWithWaitGroup(address string, wg *sync.WaitGroup) *Client {
 
-	go time.Sleep(time.Duration(rand.Intn(700) + 5))
+	//go time.Sleep(time.Duration(rand.Intn(700) + 5))
 
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial(address, opts)
