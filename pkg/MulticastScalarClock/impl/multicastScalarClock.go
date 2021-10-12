@@ -1,13 +1,13 @@
 package impl
 
 import (
+	"MulticastSDCCProject/pkg/SQMulticast"
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/rpc"
 	"bytes"
 	"encoding/gob"
 	"log"
 	"math/rand"
-	"sort"
 	"strconv"
 	"sync"
 )
@@ -22,6 +22,8 @@ type MessageTimestamp struct {
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 var ProcessingMessage []MessageTimestamp
 var respChannel chan []byte
+var timestamp int32
+var network bytes.Buffer
 
 func RandSeq(n int) string {
 	b := make([]rune, n)
@@ -31,53 +33,57 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func SendMessageToAll(message *MessageTimestamp, c []*client.Client, timestamp *int32, wg *sync.WaitGroup) {
+func GetTimestamp() int32 {
+	return timestamp
+}
+
+func SendMessageToAll(message *MessageTimestamp, c []*client.Client, wg *sync.WaitGroup) {
 
 	message.Timestamp += 1
-	*timestamp += 1
+	timestamp += 1
 
-	ProcessingMessage = append(ProcessingMessage, *message)
-	if len(ProcessingMessage) > 1 {
-		sort.SliceStable(ProcessingMessage, func(i, j int) bool {
-			return ProcessingMessage[i].Timestamp < ProcessingMessage[j].Timestamp
-		})
-	}
+	/*	ProcessingMessage = append(ProcessingMessage, *message)
+		if len(ProcessingMessage) > 1 {
+			sort.SliceStable(ProcessingMessage, func(i, j int) bool {
+				return ProcessingMessage[i].Timestamp < ProcessingMessage[j].Timestamp
+			})
+		}*/
 
-	var network bytes.Buffer        // Stand-in for a network connection
+	// Stand-in for a network connection
 	enc := gob.NewEncoder(&network) // Will write to network..
 
 	// Encode (send) the value.
-	err := enc.Encode(ProcessingMessage[0])
-	if len(ProcessingMessage) > 1 {
+	err := enc.Encode(message)
+	/*if len(ProcessingMessage) > 1 {
 		ProcessingMessage = ProcessingMessage[1:]
-	}
+	}*/
 	if err != nil {
 		log.Fatal("encode error:", err)
 	}
 	//respChannel = make(chan []byte,1)
 	md := make(map[string]string)
-	md["TypeMulticast"] = "SCMulticast"
+	md[SQMulticast.TYPEMC] = SQMulticast.SCMULTICAST
 	for i := range c {
-		err = c[i].Send(md, network.Bytes(), respChannel) //grpc
+		err = c[i].Send(md, network.Bytes(), respChannel)
 		result := <-respChannel
 		log.Println("ack: ", string(result))
 
 		if err != nil {
 			log.Fatal("error during send message")
 		}
-		//if c[i].Connection.Target() != "localhost:"+strconv.FormatUint(uint64(message.Address), 10){
-		//	log.Println("destinatario:", c[i].Connection.Target())
-		//	SendAck(DecodeMsg(network),timestamp,c[i],nil)
-		//}
 	}
 	//inserire in coda locale
-	AddToQueue(DecodeMsg(network))
+	//AddToQueue(DecodeMsg(network))
 
-	wg.Done()
+	//wg.Done()
 
 }
 
-func DecodeMsg(network bytes.Buffer) *MessageTimestamp {
+func ReceiveMessage(message *rpc.Packet) {
+
+}
+
+func DecodeMsg() *MessageTimestamp {
 	// Decode (receive) the value.
 	//log.Println("decodifica del messaggio")
 	var err error
