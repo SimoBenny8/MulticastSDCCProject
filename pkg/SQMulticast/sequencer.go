@@ -12,15 +12,20 @@ import (
 )
 
 const (
-	SEQUENCER   = "SequencerNode"
-	SQMULTICAST = "SQMulticast"
-	SCMULTICAST = "SCMulticast"
-	BMULTICAST  = "BMulticast"
-	VCMULTICAST = "VCMulticast"
-	TYPEMC      = "TypeMulticast"
-	MEMBER      = "MemberNode"
-	TYPENODE    = "TypeNode"
-	MESSAGEID   = "MessageId"
+	SEQUENCER        = "SequencerNode"
+	SQMULTICAST      = "SQMulticast"
+	SCMULTICAST      = "SCMulticast"
+	BMULTICAST       = "BMulticast"
+	VCMULTICAST      = "VCMulticast"
+	TYPEMC           = "TypeMulticast"
+	MEMBER           = "MemberNode"
+	TYPENODE         = "TypeNode"
+	MESSAGEID        = "MessageId"
+	ACK              = "Ack"
+	TRUE             = "True"
+	FALSE            = "False"
+	TIMESTAMPMESSAGE = "TimestampFirstMessage"
+	EMPTY            = ""
 )
 
 type MessageT struct {
@@ -36,9 +41,9 @@ var Connections []*client.Client
 var LocalErr error
 var SeqPort *client.Client
 
-func InitMessageQueue() {
+/*func InitMessageQueue() {
 	MessageQueue = make([]MessageT, 100)
-}
+}*/
 
 func RandSeq(n int) string {
 	b := make([]rune, n)

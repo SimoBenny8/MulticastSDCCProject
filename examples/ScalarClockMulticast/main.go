@@ -53,7 +53,7 @@ func main() {
 
 			m := &rpc.Packet{Message: scanner.Bytes()}
 			mex := &impl.MessageTimestamp{Address: *port, OPacket: *m, Timestamp: impl.GetTimestamp(), Id: impl.RandSeq(5)}
-			impl.SendMessageToAll(mex, connections, nil)
+			impl.SendMessageToAll(mex, connections)
 
 		}
 		fmt.Println("Insert message: ")
