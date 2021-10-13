@@ -86,6 +86,11 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			case SQMulticast.SCMULTICAST:
 				log.Println("case SCMulticast")
 				impl.ReceiveMessage(message)
+				if md.Get(SQMulticast.ACK)[0] == SQMulticast.TRUE {
+					//TODO:funzione di deliver
+					impl.AppendOrderedAck(*message)
+
+				}
 			case SQMulticast.SQMULTICAST:
 				log.Println("case SQMulticast")
 				if md.Get(SQMulticast.TYPENODE)[0] == SQMulticast.MEMBER {
@@ -114,7 +119,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 }
 
 func DeliverMulticast(packet rpc.Packet) DeliverObject {
-	if !strings.Contains(string(packet.Message), "ack") && impl.Queue.Len() > 0 { //TODO: sistemare priorità dei messaggi di deliver
+	if !strings.Contains(string(packet.Message), "ack") && impl.GetQueue().Len() > 0 { //TODO: sistemare priorità dei messaggi di deliver
 		mexInQueue := impl.Dequeue()
 		log.Println("deliver called for message: " + string(mexInQueue.OPacket.Message))
 		return DeliverObject{packet}

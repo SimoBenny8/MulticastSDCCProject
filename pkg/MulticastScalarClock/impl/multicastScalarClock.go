@@ -5,11 +5,15 @@ import (
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/rpc"
 	"bytes"
-	"encoding/gob"
+	"context"
+	"encoding/json"
+	"fmt"
+	"google.golang.org/grpc/metadata"
 	"log"
+	"math"
 	"math/rand"
-	"strconv"
 	"sync"
+	"time"
 )
 
 type MessageTimestamp struct {
@@ -17,6 +21,7 @@ type MessageTimestamp struct {
 	OPacket   rpc.Packet
 	Timestamp int32
 	Id        string
+	Ack       bool
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -24,6 +29,7 @@ var ProcessingMessage []MessageTimestamp
 var respChannel chan []byte
 var timestamp int32
 var network bytes.Buffer
+var connections []*client.Client
 
 func RandSeq(n int) string {
 	b := make([]rune, n)
@@ -37,34 +43,25 @@ func GetTimestamp() int32 {
 	return timestamp
 }
 
-func SendMessageToAll(message *MessageTimestamp, c []*client.Client, wg *sync.WaitGroup) {
+func SendMessageToAll(message *MessageTimestamp, c []*client.Client) {
 
 	message.Timestamp += 1
 	timestamp += 1
+	connections = c
 
-	/*	ProcessingMessage = append(ProcessingMessage, *message)
-		if len(ProcessingMessage) > 1 {
-			sort.SliceStable(ProcessingMessage, func(i, j int) bool {
-				return ProcessingMessage[i].Timestamp < ProcessingMessage[j].Timestamp
-			})
-		}*/
-
-	// Stand-in for a network connection
-	enc := gob.NewEncoder(&network) // Will write to network..
-
-	// Encode (send) the value.
-	err := enc.Encode(message)
-	/*if len(ProcessingMessage) > 1 {
-		ProcessingMessage = ProcessingMessage[1:]
-	}*/
+	b, err := json.Marshal(&message)
 	if err != nil {
-		log.Fatal("encode error:", err)
+		fmt.Printf("Error marshalling: %s", err)
+		return
 	}
+
 	//respChannel = make(chan []byte,1)
 	md := make(map[string]string)
 	md[SQMulticast.TYPEMC] = SQMulticast.SCMULTICAST
-	for i := range c {
-		err = c[i].Send(md, network.Bytes(), respChannel)
+	md[SQMulticast.ACK] = SQMulticast.FALSE
+	md[SQMulticast.TIMESTAMPMESSAGE] = SQMulticast.EMPTY
+	for i := range connections {
+		err = connections[i].Send(md, b, respChannel)
 		result := <-respChannel
 		log.Println("ack: ", string(result))
 
@@ -72,24 +69,45 @@ func SendMessageToAll(message *MessageTimestamp, c []*client.Client, wg *sync.Wa
 			log.Fatal("error during send message")
 		}
 	}
-	//inserire in coda locale
-	//AddToQueue(DecodeMsg(network))
-
-	//wg.Done()
 
 }
 
 func ReceiveMessage(message *rpc.Packet) {
+	var err error
+	mt := DecodeMsg(message)
+	timestamp = int32(math.Max(float64(mt.Timestamp), float64(timestamp)))
+	timestamp += 1
+	log.Println("Original Message: ", string(mt.OPacket.Message), "Timestamp: ", mt.Timestamp)
+
+	AddToQueue(mt)
+	mt.Timestamp = timestamp
+	b, err := json.Marshal(&mt)
+	if err != nil {
+		fmt.Printf("Error marshalling: %s", err)
+		return
+	}
+	//respChannel = make(chan []byte,1)
+	md := make(map[string]string)
+	md[SQMulticast.TYPEMC] = SQMulticast.SCMULTICAST
+	md[SQMulticast.ACK] = SQMulticast.TRUE
+	md[SQMulticast.TIMESTAMPMESSAGE] = string(GetQueue()[0].Timestamp) //timestamp del primo messaggio in coda
+	for i := range connections {
+		err = connections[i].Send(md, b, nil)
+		if err != nil {
+			log.Fatal("error during ack message")
+		}
+	}
 
 }
 
-func DecodeMsg() *MessageTimestamp {
+func DecodeMsg(message *rpc.Packet) *MessageTimestamp {
 	// Decode (receive) the value.
-	//log.Println("decodifica del messaggio")
-	var err error
-	dec := gob.NewDecoder(&network) // Will read from network.
 	var m MessageTimestamp
-	err = dec.Decode(&m)
+	log.Println("decodifica del messaggio")
+	var err error
+	if err = json.Unmarshal(message.Message, &m); err != nil {
+		panic(err)
+	}
 	log.Println("messaggio codificato: ", string(m.OPacket.Message))
 	if err != nil {
 		log.Fatal("decode error:", err)
@@ -98,42 +116,36 @@ func DecodeMsg() *MessageTimestamp {
 
 }
 
-func SendAck(mReceived *MessageTimestamp, t *int32, client *client.Client, wg *sync.WaitGroup) {
-
-	if client.Connection.Target() != "localhost:"+strconv.FormatUint(uint64(mReceived.Address), 10) {
-		var newTimestamp int32
-		if mReceived.Timestamp > *t {
-			newTimestamp = mReceived.Timestamp
-			*t = newTimestamp
-			log.Println("timestamp updated:", newTimestamp)
-		} else {
-			newTimestamp = *t
-			log.Println("timestamp not updated:", newTimestamp)
+func Deliver() {
+	rand.Seed(time.Now().UnixNano())
+	var wg sync.WaitGroup
+	for {
+		if len(GetQueue()) > 0 {
+			message := Dequeue()
+			for i := range connections {
+				wg.Add(1)
+				index := i
+				go func() {
+					defer wg.Done()
+					md := make(map[string]string)
+					md[SQMulticast.TYPEMC] = SQMulticast.SCMULTICAST
+					md[SQMulticast.ACK] = SQMulticast.FALSE
+					md[SQMulticast.TIMESTAMPMESSAGE] = string(GetQueue()[0].Timestamp)
+					delay := rand.Intn(10700) + 1000
+					//log.Println("Delay: ",delay," milliseconds")
+					time.Sleep(time.Duration(delay))
+					metaData := metadata.New(md)
+					ctx := metadata.NewOutgoingContext(context.Background(), metaData)
+					var LocalErr error
+					_, LocalErr = connections[index].Client.SendPacket(ctx, &message.OPacket)
+					if LocalErr != nil {
+						log.Println(LocalErr.Error())
+					}
+				}()
+			}
+			wg.Wait()
 		}
-		log.Println("Original Message: ", string(mReceived.OPacket.Message), "Timestamp: ", mReceived.Timestamp)
-
-		mReceived.OPacket.Message = []byte("ack: " + string(mReceived.OPacket.Message))
-		newTimestamp += 1
-		*t += 1
-		log.Println("timestamp aggiornato per ack: ", newTimestamp)
-		ack := &MessageTimestamp{OPacket: mReceived.OPacket, Timestamp: newTimestamp, Id: mReceived.Id}
-		var network bytes.Buffer        // Stand-in for a network connection
-		enc := gob.NewEncoder(&network) // Will write to network.
-
-		// Encode (send) the value.
-		err := enc.Encode(ack)
-		if err != nil {
-			log.Fatal("encode error:", err)
-		}
-
-		err = client.Send(nil, network.Bytes(), nil) //grpc
-		if err != nil {
-			log.Fatal("error during send ack")
-		}
-		//TODO: bisogna gestire la deliver del messaggio inviato al processo stesso
-		//wg.Done()
 	}
-
 }
 
 /* Workflow:
