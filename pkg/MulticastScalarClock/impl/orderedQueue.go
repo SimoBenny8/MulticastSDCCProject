@@ -25,20 +25,25 @@ func GetQueue() OrderedMessages {
 	return queue
 }
 
-/*func init() {
-	queue = make(OrderedMessages, 50)
-}*/
+func init() {
+	queue = make(OrderedMessages, 0, 100)
+}
 
 func AddToQueue(m *MessageTimestamp) {
 
 	log.Println("messaggio aggiunto in coda")
 	queue = append(queue, *m)
 	queue = OrderingMessage(queue)
+	return
 }
 
 func Dequeue() MessageTimestamp {
 	log.Println("prendo il primo elemento della coda")
 	m := queue[0]
-	queue = queue[1:]
+	if len(queue) > 1 {
+		queue = queue[1:]
+	} else {
+		queue = queue[:0]
+	}
 	return m
 }

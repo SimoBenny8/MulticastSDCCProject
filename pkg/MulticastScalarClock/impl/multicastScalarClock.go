@@ -1,9 +1,9 @@
 package impl
 
 import (
-	"MulticastSDCCProject/pkg/SQMulticast"
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/rpc"
+	"MulticastSDCCProject/pkg/util"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -25,11 +25,19 @@ type MessageTimestamp struct {
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var ProcessingMessage []MessageTimestamp
+var processingMessage []*rpc.Packet
 var respChannel chan []byte
 var timestamp int32
 var network bytes.Buffer
 var connections []*client.Client
+
+func AddingRecevingMex(mex *rpc.Packet) {
+	processingMessage = append(processingMessage, mex)
+}
+
+func init() {
+	processingMessage = make([]*rpc.Packet, 0, 100)
+}
 
 func RandSeq(n int) string {
 	b := make([]rune, n)
@@ -45,6 +53,7 @@ func GetTimestamp() int32 {
 
 func SendMessageToAll(message *MessageTimestamp, c []*client.Client) {
 
+	var wg sync.WaitGroup
 	message.Timestamp += 1
 	timestamp += 1
 	connections = c
@@ -54,26 +63,36 @@ func SendMessageToAll(message *MessageTimestamp, c []*client.Client) {
 		fmt.Printf("Error marshalling: %s", err)
 		return
 	}
-
+	delay := rand.Intn(10700) + 1000
+	//log.Println("Delay: ",delay," milliseconds")
+	time.Sleep(time.Duration(delay))
 	//respChannel = make(chan []byte,1)
 	md := make(map[string]string)
-	md[SQMulticast.TYPEMC] = SQMulticast.SCMULTICAST
-	md[SQMulticast.ACK] = SQMulticast.FALSE
-	md[SQMulticast.TIMESTAMPMESSAGE] = SQMulticast.EMPTY
+	md[util.TYPEMC] = util.SCMULTICAST
+	md[util.ACK] = util.FALSE
+	md[util.TIMESTAMPMESSAGE] = util.EMPTY
+	md[util.DELIVER] = util.FALSE
 	for i := range connections {
-		err = connections[i].Send(md, b, respChannel)
-		result := <-respChannel
-		log.Println("ack: ", string(result))
+		wg.Add(1)
+		ind := i
+		go func() {
+			err = connections[ind].Send(md, b, nil)
+			//result := <-respChannel
+			//log.Println("ack: ", string(result))
+			if err != nil {
+				log.Fatal("error during send message")
+			}
+			wg.Done()
+		}()
 
-		if err != nil {
-			log.Fatal("error during send message")
-		}
 	}
-
+	wg.Wait()
 }
 
-func ReceiveMessage(message *rpc.Packet) {
+func (node *AckNode) ReceiveMessage(message *rpc.Packet) {
 	var err error
+	//var wg sync.RWMutex
+
 	mt := DecodeMsg(message)
 	timestamp = int32(math.Max(float64(mt.Timestamp), float64(timestamp)))
 	timestamp += 1
@@ -81,23 +100,33 @@ func ReceiveMessage(message *rpc.Packet) {
 
 	AddToQueue(mt)
 	mt.Timestamp = timestamp
+	mt.Ack = true
 	b, err := json.Marshal(&mt)
 	if err != nil {
 		fmt.Printf("Error marshalling: %s", err)
 		return
 	}
+	delay := rand.Intn(10700) + 1000
+	//log.Println("Delay: ",delay," milliseconds")
+	time.Sleep(time.Duration(delay))
 	//respChannel = make(chan []byte,1)
 	md := make(map[string]string)
-	md[SQMulticast.TYPEMC] = SQMulticast.SCMULTICAST
-	md[SQMulticast.ACK] = SQMulticast.TRUE
-	md[SQMulticast.TIMESTAMPMESSAGE] = string(GetQueue()[0].Timestamp) //timestamp del primo messaggio in coda
+	md[util.TYPEMC] = util.SCMULTICAST
+	md[util.ACK] = util.TRUE
+	md[util.TIMESTAMPMESSAGE] = util.EMPTY //timestamp del primo messaggio in coda
+	md[util.DELIVER] = util.FALSE
 	for i := range connections {
-		err = connections[i].Send(md, b, nil)
-		if err != nil {
-			log.Fatal("error during ack message")
-		}
-	}
+		node.mutex.Lock()
+		ind := i
+		go func() {
+			defer node.mutex.Unlock()
+			err = node.connections[ind].Send(md, b, nil)
+			if err != nil {
+				log.Fatal("error during ack message")
+			}
+		}()
 
+	}
 }
 
 func DecodeMsg(message *rpc.Packet) *MessageTimestamp {
@@ -105,6 +134,10 @@ func DecodeMsg(message *rpc.Packet) *MessageTimestamp {
 	var m MessageTimestamp
 	log.Println("decodifica del messaggio")
 	var err error
+	delay := rand.Intn(10700) + 1000
+	//log.Println("Delay: ",delay," milliseconds")
+	time.Sleep(time.Duration(delay))
+	message.Message = bytes.TrimPrefix(message.Message, []byte("\xef\xbb\xbf"))
 	if err = json.Unmarshal(message.Message, &m); err != nil {
 		panic(err)
 	}
@@ -116,36 +149,110 @@ func DecodeMsg(message *rpc.Packet) *MessageTimestamp {
 
 }
 
-func Deliver() {
+func CheckGreaterTimestamp() {
+
+}
+
+func Deliver(myConn *client.Client, numConn int) {
 	rand.Seed(time.Now().UnixNano())
-	var wg sync.WaitGroup
+
 	for {
-		if len(GetQueue()) > 0 {
+		if len(GetQueue()) > 0 && IsCorrectNumberAck(&queue[0], numConn, nil) {
 			message := Dequeue()
-			for i := range connections {
+			var LocalErr error
+			md := make(map[string]string)
+			md[util.TYPEMC] = util.SCMULTICAST
+			md[util.ACK] = util.FALSE
+			md[util.TIMESTAMPMESSAGE] = util.EMPTY
+			md[util.DELIVER] = util.TRUE
+			delay := rand.Intn(10700) + 1000
+			//log.Println("Delay: ",delay," milliseconds")
+			time.Sleep(time.Duration(delay))
+			metaData := metadata.New(md)
+			ctx := metadata.NewOutgoingContext(context.Background(), metaData)
+			go func() {
+				_, LocalErr = myConn.Client.SendPacket(ctx, &message.OPacket)
+				if LocalErr != nil {
+					log.Println(LocalErr.Error())
+				}
+
+			}()
+			EmptyOrderedAck()
+			//wg.Done()
+		}
+	}
+
+}
+
+func Receive(conn []*client.Client, addr uint) {
+
+	for {
+		if len(processingMessage) > 0 {
+			var wg sync.WaitGroup
+			mt := DecodeMsg(processingMessage[0])
+			timestamp = int32(math.Max(float64(mt.Timestamp), float64(timestamp)))
+			timestamp += 1
+			log.Println("Original Message: ", string(mt.OPacket.Message), "Timestamp: ", mt.Timestamp)
+
+			AddToQueue(mt)
+			mt.Timestamp = timestamp
+			mt.Ack = true
+			mt.Address = addr
+			b, err := json.Marshal(&mt)
+			if err != nil {
+				fmt.Printf("Error marshalling: %s", err)
+				return
+			}
+			delay := rand.Intn(10700) + 1000
+			//log.Println("Delay: ",delay," milliseconds")
+			time.Sleep(time.Duration(delay))
+			//respChannel = make(chan []byte,1)
+			md := make(map[string]string)
+			md[util.TYPEMC] = util.SCMULTICAST
+			md[util.ACK] = util.TRUE
+			md[util.TIMESTAMPMESSAGE] = util.EMPTY //timestamp del primo messaggio in coda
+			md[util.DELIVER] = util.FALSE
+			for i := range conn {
 				wg.Add(1)
-				index := i
+				ind := i
 				go func() {
 					defer wg.Done()
-					md := make(map[string]string)
-					md[SQMulticast.TYPEMC] = SQMulticast.SCMULTICAST
-					md[SQMulticast.ACK] = SQMulticast.FALSE
-					md[SQMulticast.TIMESTAMPMESSAGE] = string(GetQueue()[0].Timestamp)
-					delay := rand.Intn(10700) + 1000
-					//log.Println("Delay: ",delay," milliseconds")
-					time.Sleep(time.Duration(delay))
-					metaData := metadata.New(md)
-					ctx := metadata.NewOutgoingContext(context.Background(), metaData)
-					var LocalErr error
-					_, LocalErr = connections[index].Client.SendPacket(ctx, &message.OPacket)
-					if LocalErr != nil {
-						log.Println(LocalErr.Error())
+
+					err = conn[ind].Send(md, b, nil)
+					if err != nil {
+						log.Fatal("error during ack message")
 					}
 				}()
 			}
+			if len(processingMessage) > 1 {
+				processingMessage = processingMessage[1:]
+			} else {
+				processingMessage = processingMessage[:0]
+			}
 			wg.Wait()
+		} else {
+			continue
 		}
 	}
+}
+
+func IsCorrectNumberAck(message *MessageTimestamp, numCon int, wg *sync.Mutex) bool {
+	i := 0
+	for r := range orderedAck {
+		if orderedAck[r].Id == message.Id {
+			i += 1
+		}
+		log.Println("numero ack: ", i)
+	}
+
+	if i == numCon {
+		log.Println("raggiunto numero di ack corretto")
+		//	wg.Unlock()
+		return true
+
+	}
+	//wg.Unlock()
+	return false
 }
 
 /* Workflow:

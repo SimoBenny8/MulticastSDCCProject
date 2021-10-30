@@ -4,6 +4,7 @@ import (
 	"MulticastSDCCProject/pkg/MulticastScalarClock/impl"
 	"MulticastSDCCProject/pkg/SQMulticast"
 	"MulticastSDCCProject/pkg/rpc"
+	"MulticastSDCCProject/pkg/util"
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
@@ -82,30 +83,32 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 	log.Println("Received Message: ", string(message.Message))
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if len(md) > 0 {
-			switch values := md.Get(SQMulticast.TYPEMC); values[0] {
-			case SQMulticast.SCMULTICAST:
+			switch values := md.Get(util.TYPEMC); values[0] {
+			case util.SCMULTICAST:
 				log.Println("case SCMulticast")
-				impl.ReceiveMessage(message)
-				if md.Get(SQMulticast.ACK)[0] == SQMulticast.TRUE {
-					//TODO:funzione di deliver
-					impl.AppendOrderedAck(*message)
-
+				if md.Get(util.ACK)[0] == util.TRUE {
+					impl.AppendOrderedAck(message)
+				} else if md.Get(util.DELIVER)[0] == util.TRUE {
+					log.Println("deliver called for message: " + string(message.Message))
+				} else {
+					impl.AddingRecevingMex(message)
+					//impl.Node.ReceiveMessage(message)
 				}
-			case SQMulticast.SQMULTICAST:
+			case util.SQMULTICAST:
 				log.Println("case SQMulticast")
-				if md.Get(SQMulticast.TYPENODE)[0] == SQMulticast.MEMBER {
+				if md.Get(util.TYPENODE)[0] == util.MEMBER {
 					log.Println("Timestamp:", SQMulticast.LocalTimestamp)
 					log.Println("deliver called for message: " + string(message.Message))
-				} else if md.Get(SQMulticast.TYPENODE)[0] == SQMulticast.SEQUENCER { //arriva al sequencer
+				} else if md.Get(util.TYPENODE)[0] == util.SEQUENCER { //arriva al sequencer
 					SQMulticast.UpdateTimestamp()
 					log.Println("Timestamp:", SQMulticast.LocalTimestamp)
-					messageT := &SQMulticast.MessageT{Message: *message, Timestamp: SQMulticast.LocalTimestamp, Id: md.Get(SQMulticast.MESSAGEID)[0]}
+					messageT := &SQMulticast.MessageT{Message: *message, Timestamp: SQMulticast.LocalTimestamp, Id: md.Get(util.MESSAGEID)[0]}
 					SQMulticast.MessageQueue = append(SQMulticast.MessageQueue, *messageT)
 				}
-			case SQMulticast.BMULTICAST:
+			case util.BMULTICAST:
 				log.Println("case BMulticast")
 				log.Println("deliver called for message: " + string(message.Message))
-			case SQMulticast.VCMULTICAST:
+			case util.VCMULTICAST:
 				log.Println("case VCMulticast")
 			default:
 				panic("unrecognized value")

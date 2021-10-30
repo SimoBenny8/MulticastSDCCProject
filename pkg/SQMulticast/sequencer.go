@@ -3,29 +3,13 @@ package SQMulticast
 import (
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/rpc"
+	"MulticastSDCCProject/pkg/util"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
 	"log"
 	"math/rand"
 	"sync"
 	"time"
-)
-
-const (
-	SEQUENCER        = "SequencerNode"
-	SQMULTICAST      = "SQMulticast"
-	SCMULTICAST      = "SCMulticast"
-	BMULTICAST       = "BMulticast"
-	VCMULTICAST      = "VCMulticast"
-	TYPEMC           = "TypeMulticast"
-	MEMBER           = "MemberNode"
-	TYPENODE         = "TypeNode"
-	MESSAGEID        = "MessageId"
-	ACK              = "Ack"
-	TRUE             = "True"
-	FALSE            = "False"
-	TIMESTAMPMESSAGE = "TimestampFirstMessage"
-	EMPTY            = ""
 )
 
 type MessageT struct {
@@ -41,9 +25,9 @@ var Connections []*client.Client
 var LocalErr error
 var SeqPort *client.Client
 
-/*func InitMessageQueue() {
-	MessageQueue = make([]MessageT, 100)
-}*/
+func init() {
+	MessageQueue = make([]MessageT, 0, 100)
+}
 
 func RandSeq(n int) string {
 	b := make([]rune, n)
@@ -71,9 +55,9 @@ func DeliverSeq() {
 				go func() {
 					defer wg.Done()
 					md := make(map[string]string)
-					md[TYPEMC] = SQMULTICAST
-					md[TYPENODE] = MEMBER //a chi arriva
-					md[MESSAGEID] = message.Id
+					md[util.TYPEMC] = util.SQMULTICAST
+					md[util.TYPENODE] = util.MEMBER //a chi arriva
+					md[util.MESSAGEID] = message.Id
 					delay := rand.Intn(10700) + 1000
 					//log.Println("Delay: ",delay," milliseconds")
 					time.Sleep(time.Duration(delay))

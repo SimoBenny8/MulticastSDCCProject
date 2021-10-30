@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,6 +29,7 @@ func main() {
 	var localErr error
 	var groupArray []string
 	var connections []*client.Client
+	var myConn *client.Client
 
 	go func() {
 
@@ -43,27 +45,34 @@ func main() {
 	connections = make([]*client.Client, len(groupArray))
 
 	for i := range groupArray {
-		connections[i] = client.Connect("localhost:" + groupArray[i])
+		if groupArray[i] == strconv.Itoa(int(*port)) {
+			connections[i] = client.Connect("localhost:" + groupArray[i])
+			myConn = connections[i]
+		} else {
+			connections[i] = client.Connect("localhost:" + groupArray[i])
+		}
+
 	}
 
-	for {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Println("Insert message: ")
-		for scanner.Scan() {
+	go impl.Receive(connections, *port)
+	go impl.Deliver(myConn, len(connections))
 
-			m := &rpc.Packet{Message: scanner.Bytes()}
-			mex := &impl.MessageTimestamp{Address: *port, OPacket: *m, Timestamp: impl.GetTimestamp(), Id: impl.RandSeq(5)}
-			impl.SendMessageToAll(mex, connections)
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Insert message: ")
+	for scanner.Scan() {
 
-		}
-		fmt.Println("Insert message: ")
-		if scanner.Err() != nil {
-			log.Println("Error from stdin")
-		}
+		m := &rpc.Packet{Message: scanner.Bytes()}
+		mex := &impl.MessageTimestamp{Address: *port, OPacket: *m, Timestamp: impl.GetTimestamp(), Id: impl.RandSeq(5)}
+		impl.SendMessageToAll(mex, connections)
 
-		if localErr != nil {
-			log.Println("Error in sending to node")
-		}
+	}
+	fmt.Println("Insert message: ")
+	if scanner.Err() != nil {
+		log.Println("Error from stdin")
+	}
+
+	if localErr != nil {
+		log.Println("Error in sending to node")
 	}
 
 }
