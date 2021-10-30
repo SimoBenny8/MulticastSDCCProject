@@ -4,6 +4,7 @@ import (
 	"MulticastSDCCProject/pkg/SQMulticast"
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/endToEnd/server"
+	"MulticastSDCCProject/pkg/util"
 	"bufio"
 	"flag"
 	"log"
@@ -64,9 +65,9 @@ func main() {
 				if connections[i].Connection.Target() == SQMulticast.SeqPort.Connection.Target() {
 					//caso invio al sequencer da un nodo generico
 					md := make(map[string]string)
-					md[SQMulticast.TYPEMC] = SQMulticast.SQMULTICAST
-					md[SQMulticast.TYPENODE] = SQMulticast.SEQUENCER //a chi arriva
-					md[SQMulticast.MESSAGEID] = SQMulticast.RandSeq(5)
+					md[util.TYPEMC] = util.SQMULTICAST
+					md[util.TYPENODE] = util.SEQUENCER //a chi arriva
+					md[util.MESSAGEID] = SQMulticast.RandSeq(5)
 					localErr = connections[i].Send(md, scanner.Bytes(), nil)
 				}
 			}
