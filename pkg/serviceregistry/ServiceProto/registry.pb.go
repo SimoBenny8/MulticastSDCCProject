@@ -4,7 +4,7 @@
 // 	protoc        v3.17.3
 // source: registry.proto
 
-package __
+package ServiceProto
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
