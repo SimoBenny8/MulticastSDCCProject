@@ -4,6 +4,8 @@ import (
 	"MulticastSDCCProject/pkg/SQMulticast"
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/endToEnd/server"
+	"MulticastSDCCProject/pkg/pool"
+	"MulticastSDCCProject/pkg/rpc"
 	"MulticastSDCCProject/pkg/util"
 	"bufio"
 	"flag"
@@ -53,35 +55,24 @@ func main() {
 		SQMulticast.SeqPort = connections[n]
 		log.Println("Sequencer is", SQMulticast.SeqPort.Connection.Target())
 	}
-
+	pool.Pool.InitThreadPool(connections, 5, util.SQMULTICAST, nil, *port)
 	go SQMulticast.DeliverSeq()
-	//implemento invio messaggio
-	for {
-		scanner := bufio.NewScanner(os.Stdin)
-		log.Println("Insert message: ")
-		for scanner.Scan() {
 
-			for i := range connections {
-				if connections[i].Connection.Target() == SQMulticast.SeqPort.Connection.Target() {
-					//caso invio al sequencer da un nodo generico
-					md := make(map[string]string)
-					md[util.TYPEMC] = util.SQMULTICAST
-					md[util.TYPENODE] = util.SEQUENCER //a chi arriva
-					md[util.MESSAGEID] = SQMulticast.RandSeq(5)
-					localErr = connections[i].Send(md, scanner.Bytes(), nil)
-				}
-			}
+	scanner := bufio.NewScanner(os.Stdin)
+	log.Println("Insert message: ")
+	for scanner.Scan() {
 
-		}
+		m := &rpc.Packet{Message: scanner.Bytes()}
+		pool.Pool.Message <- m
 
-		if scanner.Err() != nil {
-			log.Println("Error from stdin")
-		}
+	}
 
-		if localErr != nil {
-			log.Println("Error in sending to node")
-		}
+	if scanner.Err() != nil {
+		log.Println("Error from stdin")
+	}
 
+	if localErr != nil {
+		log.Println("Error in sending to node")
 	}
 
 }

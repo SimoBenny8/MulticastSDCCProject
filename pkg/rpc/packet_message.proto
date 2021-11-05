@@ -10,5 +10,4 @@ message Packet{
 }
 
 message ResponsePacket{
-  bytes ack = 1;
 }

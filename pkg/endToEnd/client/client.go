@@ -35,10 +35,10 @@ func Connect(address string) *Client {
 
 //method to send message
 func (c *Client) Send(messageMetadata map[string]string, payload []byte, respChannel chan []byte) error {
-	var wg sync.WaitGroup
+	var wg sync.Mutex
 	log.Println("Sender: ", c.Connection.Target())
-	wg.Add(1)
-	delay(&wg)
+	wg.Lock()
+	delay(&wg, 5000)
 	md := metadata.New(messageMetadata)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	_, err := c.Client.SendPacket(ctx, &rpc.Packet{Message: payload})
@@ -65,11 +65,10 @@ func (c *Client) CloseConnection() error {
 	return nil
 }
 
-func delay(wg *sync.WaitGroup) {
-	delay := rand.Intn(10700) + 1000
-	//log.Println("Delay: ",delay," milliseconds")
-	time.Sleep(time.Duration(delay))
-	wg.Done()
+func delay(wg *sync.Mutex, value int) {
+	d := rand.Intn(value) + 1000
+	time.Sleep(time.Duration(d) * time.Millisecond)
+	defer wg.Unlock()
 }
 
 //connect with delay

@@ -4,7 +4,9 @@ import (
 	"MulticastSDCCProject/pkg/MulticastScalarClock/impl"
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/endToEnd/server"
+	"MulticastSDCCProject/pkg/pool"
 	"MulticastSDCCProject/pkg/rpc"
+	"MulticastSDCCProject/pkg/util"
 	"bufio"
 	"flag"
 	"fmt"
@@ -54,16 +56,16 @@ func main() {
 
 	}
 
+	pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, *port)
 	go impl.Receive(connections, *port)
 	go impl.Deliver(myConn, len(connections))
-
+	impl.SetConnections(connections)
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Insert message: ")
 	for scanner.Scan() {
 
 		m := &rpc.Packet{Message: scanner.Bytes()}
-		mex := &impl.MessageTimestamp{Address: *port, OPacket: *m, Timestamp: impl.GetTimestamp(), Id: impl.RandSeq(5)}
-		impl.SendMessageToAll(mex, connections)
+		pool.Pool.Message <- m
 
 	}
 	fmt.Println("Insert message: ")

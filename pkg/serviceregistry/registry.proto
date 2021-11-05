@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package serviceregistry;
+option go_package = ".";
+
+
+service Registry {
+  rpc register (RegInfo) returns (RegAnswer) {}
+  rpc startGroup (RequestData) returns (Group) {}
+  rpc ready (RequestData) returns (Group) {}
+  rpc closeGroup (RequestData) returns (Group) {}
+  rpc getStatus (MulticastId) returns (Group) {}
+}
+
+enum TypeMulticast {
+  BMULTICAST = 0;
+  SCMULTICAST = 1;
+  SQMULTICAST = 2;
+  VCMULTICAST = 3;
+}
+
+message RegInfo {
+  string multicastId = 1;
+  TypeMulticast multicastType = 2;
+  uint32 port = 3;
+}
+
+message RegAnswer {
+  string clientId = 1;
+  Group groupInfo = 2;
+}
+
+message Group {
+  string multicastId = 1;
+  TypeMulticast multicastType = 2;
+  Status status = 3;
+  uint64 readyMembers = 4;
+  map<string, MemberInfo>  members = 5;
+}
+enum Status {
+  OPENING = 0;
+  STARTING = 1;
+  ACTIVE = 2;
+  CLOSING = 3;
+  CLOSED = 4;
+}
+message MulticastId {
+  string multicastId = 1;
+}
+
+message RequestData {
+  string multicastId = 1;
+  string clientId = 2;
+}
+
+message MemberInfo {
+  string id = 1;
+  string address = 2;
+  bool ready = 3;
+}
+
+message Empty {
+
+}

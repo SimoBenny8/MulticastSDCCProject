@@ -3,6 +3,7 @@ package server
 import (
 	"MulticastSDCCProject/pkg/MulticastScalarClock/impl"
 	"MulticastSDCCProject/pkg/SQMulticast"
+	"MulticastSDCCProject/pkg/VectorClockMulticast"
 	"MulticastSDCCProject/pkg/rpc"
 	"MulticastSDCCProject/pkg/util"
 	"context"
@@ -92,7 +93,6 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					log.Println("deliver called for message: " + string(message.Message))
 				} else {
 					impl.AddingRecevingMex(message)
-					//impl.Node.ReceiveMessage(message)
 				}
 			case util.SQMULTICAST:
 				log.Println("case SQMulticast")
@@ -110,6 +110,11 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 				log.Println("deliver called for message: " + string(message.Message))
 			case util.VCMULTICAST:
 				log.Println("case VCMulticast")
+				if md.Get(util.DELIVER)[0] == util.TRUE {
+					log.Println("deliver called for message: " + string(message.Message))
+				} else {
+					VectorClockMulticast.ReceiveMessage(message)
+				}
 			default:
 				panic("unrecognized value")
 
