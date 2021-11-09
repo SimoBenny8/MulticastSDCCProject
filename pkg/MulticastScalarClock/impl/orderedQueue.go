@@ -12,7 +12,7 @@ func (a OrderedMessages) Less(i, j int) bool { return a[i].Timestamp < a[j].Time
 func (a OrderedMessages) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 //func che ordina i messaggi in coda
-func OrderingMessage(messages []MessageTimestamp) OrderedMessages { //da testare
+func OrderingMessage(messages []MessageTimestamp) OrderedMessages {
 	log.Println("riordino i messaggi")
 	sort.Sort(OrderedMessages(messages))
 	return messages

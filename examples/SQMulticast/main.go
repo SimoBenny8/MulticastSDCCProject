@@ -24,7 +24,7 @@ func main() {
 	var err error
 
 	go func() {
-		err = server.RunServer(*port)
+		err = server.RunServer(*port, server.Register)
 	}()
 	if err != nil {
 		log.Println("Error in connection sequencer")
@@ -45,18 +45,15 @@ func main() {
 	for i := range groupArray {
 		connections[i] = client.Connect("localhost:" + groupArray[i])
 	}
-	if SQMulticast.Connections == nil {
-		SQMulticast.Connections = connections
-	}
 
 	if SQMulticast.SeqPort == nil {
 		//scelgo quale dei nodi è il sequencer(randomicamente)
-		n := rand.Intn(len(connections)) //problema: ogni nodo sceglie il proprio sequencer
+		n := rand.Intn(len(connections))
 		SQMulticast.SeqPort = connections[n]
 		log.Println("Sequencer is", SQMulticast.SeqPort.Connection.Target())
 	}
 	pool.Pool.InitThreadPool(connections, 5, util.SQMULTICAST, nil, *port)
-	go SQMulticast.DeliverSeq()
+	go SQMulticast.DeliverSeq(connections)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	log.Println("Insert message: ")

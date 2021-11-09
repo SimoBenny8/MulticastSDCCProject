@@ -25,12 +25,14 @@ type MessageTimestamp struct {
 	FirstTsInQueue int
 }
 
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var processingMessage []*rpc.Packet
-var respChannel chan []byte
-var timestamp int
-var network bytes.Buffer
-var connections []*client.Client
+var (
+	letters           = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	processingMessage []*rpc.Packet
+	respChannel       chan []byte
+	timestamp         int
+	network           bytes.Buffer
+	connections       []*client.Client
+)
 
 func AddingRecevingMex(mex *rpc.Packet) {
 	processingMessage = append(processingMessage, mex)
