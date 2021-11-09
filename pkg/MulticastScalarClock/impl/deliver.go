@@ -17,11 +17,11 @@ type OtherTimestamp struct {
 	otherNodeTimestamp int
 }
 
-var otherTs []OtherTimestamp
-
-var Node *AckNode
-
-var orderedAck []MessageTimestamp
+var (
+	otherTs    []OtherTimestamp
+	Node       *AckNode
+	orderedAck []MessageTimestamp
+)
 
 func init() {
 	orderedAck = make([]MessageTimestamp, 0, 100)

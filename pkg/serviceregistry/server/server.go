@@ -11,7 +11,6 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"time"
 )
 
 type RegistryServer struct {
@@ -19,26 +18,25 @@ type RegistryServer struct {
 }
 
 var (
-	groups   map[string]*Mgroup
+	groups   map[string]*MulticastGroup
 	Mugroups sync.RWMutex
 )
 
-type Mgroup struct {
+type MulticastGroup struct {
 	mu        sync.RWMutex
 	groupInfo *ServiceProto.Group
 }
 
 func init() {
-	groups = make(map[string]*Mgroup)
+	groups = make(map[string]*MulticastGroup)
 }
 
 // Registration of the node in a specific group
 func (s *RegistryServer) Register(ctx context.Context, in *ServiceProto.RegInfo) (*ServiceProto.RegAnswer, error) {
-	timeout := time.Second
-	c, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	log.Println("Start registering..")
-	source, ok := peer.FromContext(c)
+
+	log.Println("Starting register service ")
+
+	source, ok := peer.FromContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "Missing source address")
 	}
@@ -55,19 +53,11 @@ func (s *RegistryServer) Register(ctx context.Context, in *ServiceProto.RegInfo)
 	multicastGroup, exists := groups[multicastId]
 
 	if exists {
-		if multicastGroup.groupInfo.MulticastType != in.MulticastType {
-			return nil, status.Errorf(codes.InvalidArgument, "MulticastType")
-		}
-		if multicastGroup.groupInfo.Status != ServiceProto.Status_OPENING {
-			return nil, status.Errorf(codes.PermissionDenied, "ServiceStarted")
-		}
-		if _, ok := multicastGroup.groupInfo.Members[srcAddr]; ok {
-			return nil, status.Errorf(codes.AlreadyExists, "Already Registered")
-		}
+		log.Println("group already exists")
+		return nil, nil
 	} else {
-		log.Println("Start registering ..")
 		// Creating the group
-		multicastGroup = &Mgroup{groupInfo: &ServiceProto.Group{
+		multicastGroup = &MulticastGroup{groupInfo: &ServiceProto.Group{
 			MulticastId:   multicastId,
 			MulticastType: in.MulticastType,
 			Status:        ServiceProto.Status_OPENING,
@@ -76,7 +66,6 @@ func (s *RegistryServer) Register(ctx context.Context, in *ServiceProto.RegInfo)
 		groups[multicastId] = multicastGroup
 	}
 	// Registering node to the group
-	//Creating new MemberInfo
 	memberInfo := new(ServiceProto.MemberInfo)
 	memberInfo.Id = srcAddr
 	memberInfo.Address = srcAddr
@@ -108,10 +97,6 @@ func (s *RegistryServer) StartGroup(ctx context.Context, in *ServiceProto.Reques
 	mGroup.mu.Lock()
 	defer mGroup.mu.Unlock()
 
-	if mGroup.groupInfo.Status != ServiceProto.Status_OPENING {
-		return nil, status.Errorf(codes.Canceled, "Cannot start group")
-	}
-
 	if _, ok = mGroup.groupInfo.Members[clientId]; !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "Not registered to the group")
 	}
@@ -122,7 +107,7 @@ func (s *RegistryServer) StartGroup(ctx context.Context, in *ServiceProto.Reques
 
 //Method that changes status of a member. The member is ready for communication.
 func (s *RegistryServer) Ready(ctx context.Context, in *ServiceProto.RequestData) (*ServiceProto.Group, error) {
-
+	var member *ServiceProto.MemberInfo
 	_, ok := peer.FromContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "Missing source address")
@@ -139,12 +124,6 @@ func (s *RegistryServer) Ready(ctx context.Context, in *ServiceProto.RequestData
 
 	mGroup.mu.Lock()
 	defer mGroup.mu.Unlock()
-
-	if mGroup.groupInfo.Status != ServiceProto.Status_STARTING {
-		return nil, status.Errorf(codes.Canceled, "Cannot start group")
-	}
-
-	var member *ServiceProto.MemberInfo
 
 	if member, ok = mGroup.groupInfo.Members[clientId]; !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "Not registered to the group")

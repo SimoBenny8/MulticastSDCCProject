@@ -28,8 +28,13 @@ func NewServer() *Server {
 	return &Server{}
 }
 
+func Register(s grpc.ServiceRegistrar) (err error) {
+	rpc.RegisterPacketServiceServer(s, NewServer())
+	return
+}
+
 // RunServer runs gRPC service to publish OPacket service
-func RunServer(port uint) error {
+func RunServer(port uint, gServices ...func(grpc.ServiceRegistrar) error) error {
 
 	netListener, err := getNetListener(port)
 	if err == nil {
@@ -37,8 +42,16 @@ func RunServer(port uint) error {
 	}
 	// register service
 	server := grpc.NewServer()
-	svr := NewServer()
-	rpc.RegisterPacketServiceServer(server, svr)
+
+	for _, grpcService := range gServices {
+		err = grpcService(server)
+		if err != nil {
+			return err
+		}
+	}
+
+	//svr := NewServer()
+	//rpc.RegisterPacketServiceServer(server, svr)
 	// start the server
 	err = server.Serve(netListener)
 	if err != nil {
@@ -91,6 +104,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					impl.AppendOrderedAck(message)
 				} else if md.Get(util.DELIVER)[0] == util.TRUE {
 					log.Println("deliver called for message: " + string(message.Message))
+					//util.AppendMessageToBeDeliver(message)
 				} else {
 					impl.AddingRecevingMex(message)
 				}
@@ -99,6 +113,8 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 				if md.Get(util.TYPENODE)[0] == util.MEMBER {
 					log.Println("Timestamp:", SQMulticast.LocalTimestamp)
 					log.Println("deliver called for message: " + string(message.Message))
+					messageT := &SQMulticast.MessageT{Message: *message, Timestamp: SQMulticast.LocalTimestamp, Id: md.Get(util.MESSAGEID)[0]}
+					SQMulticast.AppendMessageToBeDeliver(messageT)
 				} else if md.Get(util.TYPENODE)[0] == util.SEQUENCER { //arriva al sequencer
 					SQMulticast.UpdateTimestamp()
 					log.Println("Timestamp:", SQMulticast.LocalTimestamp)

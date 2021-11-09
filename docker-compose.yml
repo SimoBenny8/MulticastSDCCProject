@@ -1,21 +1,62 @@
 version: '3'
 
 services:
+  registry:
+    image: simonebenedetti/multicastsdcc
+    build:
+      context: .
+    container_name: registry
+    environment:
+      - REGISTRY=true
+
+
   node1:
     build:
       context: .
+    container_name: node1
+    environment:
+      - APP=true
+      - REGISTRY_ADDR=registry:90
+      - NUM_THREADS=2
+      - DELAY=1
+      - VERBOSE=true
+      - ID=0
+    image:
+      simonebenedetti/multicastsdcc
     ports:
-      - 8090:8090
+      - 8080:80
 
   node2:
-    build:
-      context: .
-    ports:
-      - 8091:8090
+      build:
+        context: .
+      container_name: node2
+      environment:
+        - APP=true
+        - REGISTRY_ADDR=registry:90
+        - NUM_THREADS=2
+        - DELAY=1
+        - VERBOSE=true
+        - ID=1
+      image:
+        simonebenedetti/multicastsdcc
+      ports:
+        - 8081:80
 
   node3:
-    build:
-      context: .
-    ports:
-      - 8093:8090
+      build:
+        context: .
+      container_name: node3
+      environment:
+        - APP=true
+        - REGISTRY_ADDR=registry:90
+        - NUM_THREADS=2
+        - DELAY=1
+        - VERBOSE=true
+        - ID=2
+      image:
+        simonebenedetti/multicastsdcc
+      ports:
+        - 8082:80
+
+
 

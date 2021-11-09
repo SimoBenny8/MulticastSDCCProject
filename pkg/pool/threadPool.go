@@ -17,7 +17,9 @@ type ThreadPool struct {
 	Message chan *rpc.Packet
 }
 
-var Pool ThreadPool
+var (
+	Pool ThreadPool
+)
 
 func (t *ThreadPool) InitThreadPool(connections []*client.Client, numTh int, multicastType string, respChannel chan []byte, port uint) {
 	t.Message = make(chan *rpc.Packet, 30)

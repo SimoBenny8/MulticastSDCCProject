@@ -25,7 +25,7 @@ func main() {
 	var err error
 	go func() {
 
-		err = server.RunServer(*port)
+		err = server.RunServer(*port, server.Register)
 	}()
 	if err != nil {
 		log.Println("Error in connection node")

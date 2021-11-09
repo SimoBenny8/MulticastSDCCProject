@@ -18,12 +18,13 @@ type MessageT struct {
 	Id        string
 }
 
-var LocalTimestamp uint32
-var MessageQueue []MessageT
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-var Connections []*client.Client
-var LocalErr error
-var SeqPort *client.Client
+var (
+	LocalTimestamp uint32
+	MessageQueue   []MessageT
+	letters        = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	LocalErr       error
+	SeqPort        *client.Client
+)
 
 func init() {
 	MessageQueue = make([]MessageT, 0, 100)
@@ -41,7 +42,7 @@ func UpdateTimestamp() {
 	LocalTimestamp += 1
 }
 
-func DeliverSeq() {
+func DeliverSeq(Connections []*client.Client) {
 	rand.Seed(time.Now().UnixNano())
 	var wg sync.WaitGroup
 	for {
@@ -58,9 +59,7 @@ func DeliverSeq() {
 					md[util.TYPEMC] = util.SQMULTICAST
 					md[util.TYPENODE] = util.MEMBER //a chi arriva
 					md[util.MESSAGEID] = message.Id
-					delay := rand.Intn(10700) + 1000
-					//log.Println("Delay: ",delay," milliseconds")
-					time.Sleep(time.Duration(delay))
+
 					metaData := metadata.New(md)
 					ctx := metadata.NewOutgoingContext(context.Background(), metaData)
 					_, LocalErr = Connections[i].Client.SendPacket(ctx, &message.Message)
