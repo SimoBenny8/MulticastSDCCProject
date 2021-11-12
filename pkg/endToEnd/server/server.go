@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -111,15 +112,20 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			case util.SQMULTICAST:
 				log.Println("case SQMulticast")
 				if md.Get(util.TYPENODE)[0] == util.MEMBER {
-					log.Println("Timestamp:", SQMulticast.LocalTimestamp)
+					sequencer := SQMulticast.GetSequencer()
+					nodes := SQMulticast.GetDeliverNodes()
+					messageT := &SQMulticast.MessageSeq{Message: message, Timestamp: sequencer.LocalTimestamp, Id: md.Get(util.MESSAGEID)[0]}
+					for i := range nodes {
+						if md.Get(util.RECEIVER)[0] == nodes[i].MyConn.Connection.Target() {
+							nodes[i].AppendMessageToBeDeliver(messageT)
+							log.Println("length queue:" + strconv.Itoa(len(nodes[i].DeliverQueue)))
+						}
+
+					}
 					log.Println("deliver called for message: " + string(message.Message))
-					messageT := &SQMulticast.MessageT{Message: *message, Timestamp: SQMulticast.LocalTimestamp, Id: md.Get(util.MESSAGEID)[0]}
-					SQMulticast.AppendMessageToBeDeliver(messageT)
-				} else if md.Get(util.TYPENODE)[0] == util.SEQUENCER { //arriva al sequencer
-					SQMulticast.UpdateTimestamp()
-					log.Println("Timestamp:", SQMulticast.LocalTimestamp)
-					messageT := &SQMulticast.MessageT{Message: *message, Timestamp: SQMulticast.LocalTimestamp, Id: md.Get(util.MESSAGEID)[0]}
-					SQMulticast.MessageQueue = append(SQMulticast.MessageQueue, *messageT)
+				} else if md.Get(util.TYPENODE)[0] == util.SEQUENCER {
+					//arriva al sequencer
+					SQMulticast.ReceiveMessageToSequencer(message, md.Get(util.MESSAGEID)[0])
 				}
 			case util.BMULTICAST:
 				log.Println("case BMulticast")

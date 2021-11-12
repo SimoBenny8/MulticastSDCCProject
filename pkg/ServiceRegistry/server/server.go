@@ -1,7 +1,7 @@
 package server
 
 import (
-	"MulticastSDCCProject/pkg/serviceregistry/ServiceProto"
+	"MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
 	"context"
 	"fmt"
 	"google.golang.org/grpc"

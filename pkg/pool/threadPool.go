@@ -36,12 +36,13 @@ func (t *ThreadPool) InitThreadPool(connections []*client.Client, numTh int, mul
 
 func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*client.Client, respChannel chan []byte, port uint) {
 	var localErr error
+	seq := SQMulticast.GetSequencer()
 	for {
 		select {
 		case mex := <-chanMex:
 			if multicastType == util.SQMULTICAST {
 				for i := range connections {
-					if connections[i].Connection.Target() == SQMulticast.SeqPort.Connection.Target() {
+					if connections[i].Connection.Target() == seq.SeqPort.Connection.Target() {
 						//caso invio al sequencer da un nodo generico
 						md := make(map[string]string)
 						md[util.TYPEMC] = util.SQMULTICAST
