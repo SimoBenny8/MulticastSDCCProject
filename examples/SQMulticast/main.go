@@ -12,6 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -22,6 +23,7 @@ func main() {
 	flag.Parse()
 
 	var err error
+	var myConn *client.Client
 
 	go func() {
 		err = server.RunServer(*port, server.Register)
@@ -36,7 +38,6 @@ func main() {
 	var connections []*client.Client
 
 	groupArray = strings.Split(*group, ",")
-	//myAddress := "localhost:"+ strconv.Itoa(int(*port))
 
 	connections = make([]*client.Client, len(groupArray))
 	rand.Seed(int64(len(groupArray)))
@@ -44,16 +45,38 @@ func main() {
 	//connessione ai nodi
 	for i := range groupArray {
 		connections[i] = client.Connect("localhost:" + groupArray[i])
+		portConn, localErr := strconv.Atoi(groupArray[i])
+		if localErr != nil {
+			log.Println("Error from atoi")
+		}
+		if portConn == int(*port) {
+			myConn = connections[i]
+		}
 	}
 
-	if SQMulticast.SeqPort == nil {
-		//scelgo quale dei nodi è il sequencer(randomicamente)
-		n := rand.Intn(len(connections))
-		SQMulticast.SeqPort = connections[n]
-		log.Println("Sequencer is", SQMulticast.SeqPort.Connection.Target())
-	}
+	n := rand.Intn(len(connections))
+
+	//node.Connections = connections
+
+	node := new(SQMulticast.NodeForSq)
+	node.NodeId = uint(rand.Intn(5))
+	node.Connections = connections
+	node.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
+	node.MyConn = myConn
+
+	SQMulticast.AppendNodes(*node)
+
+	seq := new(SQMulticast.Sequencer)
+	seq.Node = *node
+	seq.SeqPort = connections[n]
+	seq.Connections = connections
+	seq.LocalTimestamp = 0
+	seq.MessageQueue = make([]SQMulticast.MessageSeq, 0, 100)
+	SQMulticast.SetSequencer(*seq)
+	log.Println("Sequencer is", seq.SeqPort.Connection.Target())
+
+	go SQMulticast.DeliverSeq()
 	pool.Pool.InitThreadPool(connections, 5, util.SQMULTICAST, nil, *port)
-	go SQMulticast.DeliverSeq(connections)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	log.Println("Insert message: ")

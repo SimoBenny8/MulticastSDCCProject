@@ -16,4 +16,5 @@ const (
 	TIMESTAMPMESSAGE = "timestampfirstmessage"
 	EMPTY            = ""
 	DELIVER          = "deliver"
+	RECEIVER         = "Receiver"
 )

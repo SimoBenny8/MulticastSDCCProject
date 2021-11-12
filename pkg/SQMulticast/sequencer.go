@@ -12,23 +12,25 @@ import (
 	"time"
 )
 
-type MessageT struct {
-	Message   rpc.Packet
+type MessageSeq struct {
+	Message   *rpc.Packet
 	Timestamp uint32
 	Id        string
 }
 
-var (
+type Sequencer struct {
+	Node           NodeForSq
 	LocalTimestamp uint32
-	MessageQueue   []MessageT
-	letters        = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	MessageQueue   []MessageSeq
 	LocalErr       error
 	SeqPort        *client.Client
-)
-
-func init() {
-	MessageQueue = make([]MessageT, 0, 100)
+	Connections    []*client.Client
 }
+
+var (
+	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	seq     Sequencer
+)
 
 func RandSeq(n int) string {
 	b := make([]rune, n)
@@ -38,18 +40,43 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func UpdateTimestamp() {
-	LocalTimestamp += 1
+func GetSequencer() Sequencer {
+	return seq
 }
 
-func DeliverSeq(Connections []*client.Client) {
+func SetSequencer(sequencer Sequencer) {
+	seq = sequencer
+}
+
+func (s *Sequencer) UpdateTimestamp() {
+	s.LocalTimestamp += 1
+}
+
+func ReceiveMessageToSequencer(mex *rpc.Packet, id string) {
+	var wg sync.Mutex
+	seq.UpdateTimestamp()
+	log.Println("Timestamp:", seq.LocalTimestamp)
+	messageT := &MessageSeq{Message: mex, Timestamp: seq.LocalTimestamp, Id: id}
+	wg.Lock()
+	seq.addMessageSeq(&wg, messageT)
+
+}
+
+func (s *Sequencer) addMessageSeq(wg *sync.Mutex, mex *MessageSeq) {
+	defer wg.Unlock()
+	s.MessageQueue = append(s.MessageQueue, *mex)
+}
+
+func DeliverSeq() {
 	rand.Seed(time.Now().UnixNano())
 	var wg sync.WaitGroup
 	for {
-		if len(MessageQueue) > 0 {
-			message := MessageQueue[0]
-			MessageQueue = MessageQueue[1:]
-			for i := range Connections {
+		//log.Println("esecuzione deliver")
+		if len(seq.MessageQueue) > 0 {
+			log.Println("sto nella coda")
+			message := seq.MessageQueue[0]
+			seq.MessageQueue = seq.MessageQueue[1:]
+			for i := range seq.Connections {
 				wg.Add(1)
 				//caso invio al sequencer da un nodo generico
 				i := i
@@ -59,12 +86,12 @@ func DeliverSeq(Connections []*client.Client) {
 					md[util.TYPEMC] = util.SQMULTICAST
 					md[util.TYPENODE] = util.MEMBER //a chi arriva
 					md[util.MESSAGEID] = message.Id
-
+					md[util.RECEIVER] = seq.Connections[i].Connection.Target()
 					metaData := metadata.New(md)
 					ctx := metadata.NewOutgoingContext(context.Background(), metaData)
-					_, LocalErr = Connections[i].Client.SendPacket(ctx, &message.Message)
-					if LocalErr != nil {
-						log.Println(LocalErr.Error())
+					_, seq.LocalErr = seq.Connections[i].Client.SendPacket(ctx, message.Message)
+					if seq.LocalErr != nil {
+						log.Println(seq.LocalErr.Error())
 					}
 				}()
 			}

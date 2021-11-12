@@ -1,7 +1,7 @@
 package client
 
 import (
-	"MulticastSDCCProject/pkg/serviceregistry/ServiceProto"
+	"MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
 	"google.golang.org/grpc"
 	"log"
 )
