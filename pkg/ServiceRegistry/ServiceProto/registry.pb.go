@@ -11,6 +11,7 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+	"time"
 )
 
 const (
@@ -378,6 +379,22 @@ type RequestData struct {
 
 	MulticastId string `protobuf:"bytes,1,opt,name=multicastId,proto3" json:"multicastId,omitempty"`
 	ClientId    string `protobuf:"bytes,2,opt,name=clientId,proto3" json:"clientId,omitempty"`
+}
+
+func (x *RequestData) Deadline() (deadline time.Time, ok bool) {
+	panic("implement me")
+}
+
+func (x *RequestData) Done() <-chan struct{} {
+	panic("implement me")
+}
+
+func (x *RequestData) Err() error {
+	panic("implement me")
+}
+
+func (x *RequestData) Value(key interface{}) interface{} {
+	panic("implement me")
 }
 
 func (x *RequestData) Reset() {

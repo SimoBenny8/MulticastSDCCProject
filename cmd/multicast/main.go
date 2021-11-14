@@ -1,92 +1,83 @@
 package main
 
 import (
-	"MulticastSDCCProject/pkg/endToEnd/client"
+	server2 "MulticastSDCCProject/pkg/ServiceRegistry/server"
 	"MulticastSDCCProject/pkg/endToEnd/server"
+	"MulticastSDCCProject/pkg/restApi"
+	"flag"
+	"fmt"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"sync"
 )
 
 func main() {
 
-	//connetto il server
-	nodeAddress := []string{"node1:8090"}
-	addressGroups := []string{"node1:8090", "node2:8091", "node3:8092"} //"node1:8090", "node2:8091",
+	delay := flag.Uint("DELAY", uint(utils.GetEnvIntWithDefault("DELAY", 0)), "delay for sending operations (ms)")
+	grpcPort := flag.Uint("GRPC_PORT", uint(utils.GetEnvIntWithDefault("GRPC_PORT", 90)), "port number of the grpc server")
+	restPort := flag.Uint("REST_PORT", uint(utils.GetEnvIntWithDefault("REST_PORT", 80)), "port number of the rest server")
+	restPath := flag.String("restPath", utils.GetEnvStringWithDefault("REST_PATH", "/multicast/v1"), "path of the rest api")
+	numThreads := flag.Uint("NUM_THREADS", uint(utils.GetEnvIntWithDefault("NUM_THREADS", 1)), "number of threads used to multicast messages")
+	verb := flag.Bool("VERBOSE", utils.GetEnvBoolWithDefault("VERBOSE", true), "Turn verbose mode on or off.")
+	registry_addr := flag.String("REGISTRY_ADDR", "registry:90", "service registry address")
+	r := flag.Bool("REGISTRY", utils.GetEnvBoolWithDefault("REGISTRY", false), "start multicast registry")
+	application := flag.Bool("APP", utils.GetEnvBoolWithDefault("APP", false), "start multicast application")
+	myId := flag.Int("ID", utils.GetEnvIntWithDefault("ID", 0), "number id of member")
+
+	//utils.Myid = *myId
+	flag.Parse()
+	services := make([]func(registrar grpc.ServiceRegistrar) error, 0)
+
+	if *application {
+		log.Println("Adding basic communication service to gRPC server")
+		services = append(services, server.Register)
+	}
+	if *r {
+		log.Println("Adding multicast registry service to gRPC server")
+		services = append(services, server2.Registration)
+	}
+	log.Println("start")
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	go func() {
-		err := server.RunServer(8090)
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
 		if err != nil {
-			log.Println("Error in connection")
 			return
 		}
+		log.Printf("Grpc-Server started at %v", lis.Addr().String())
+
+		s := grpc.NewServer()
+		for _, grpcService := range services {
+			err = grpcService(s)
+			if err != nil {
+				return
+			}
+
+		}
+
+		if err = s.Serve(lis); err != nil {
+			return
+		}
+		wg.Done()
 	}()
-	Connections := [3]*client.Client{}
-	//creo il cluster di nodi (docker compose)
-	// ogni connessione avrà la propria goroutine
-	//il numero di nodi connessi e concorrenti è limitato dalla size del threadpool
-	wg := sync.WaitGroup{}
-	numNodes := 3
-	index := 0
-	for i := 0; i < numNodes; i++ {
+
+	if *application {
+
 		wg.Add(1)
-		c := client.ConnectWithWaitGroup(addressGroups[i], &wg)
-		wg.Wait()
-		// deve tornare il riferimento alla connessione del client
-		Connections[i] = c
-		index = index + 1
+		go func() {
+			err := restApi.Run(*grpcPort, *restPort, *registry_addr, *restPath, int(*numThreads), *delay, *verb)
+			if err != nil {
+				log.Println("Error in running applicatioon", err.Error())
+				return
+			}
+			wg.Done()
+		}()
+
 	}
 
-	//creazione della pool
-	//pool, err := multicast.CreatePool("1", 3, Connections)
-	var err error
-	//invio del messaggio per ogni goroutine in PARALLELO
-	log.Println("Multicaster selected : ", nodeAddress)
-	multicast := func(metadata map[string]string, payload []byte) {
-		wg = sync.WaitGroup{}
-		for j := 0; j < len(Connections)-1; j++ {
-			wg.Add(1)
-			go func() {
-				var localErr error
-				localErr = Connections[j].Send(metadata, payload, nil)
-
-				if localErr != nil {
-					err = localErr
-				}
-
-				wg.Done()
-			}()
-
-		}
-		wg.Wait()
-
-		if err != nil {
-			return
-		}
-	}
-	multicast(make(map[string]string), []byte("PROVA"))
-	//sendToOne := func(client *grpc.Client, metadata map[string]string, payload []byte, wg *sync.WaitGroup) {
-	//	log.Println("Sending from ..", client.Connection.Target())
-	//	err := client.Send(make(map[string]string), []byte(""))
-	//	if err != nil {
-	//		return
-	//	}
-	//	wg.Done()
-	//	wg.Wait()
-	//}
-	//sendToAll := func(client *grpc.Client, metadata map[string]string, payload []byte, poolId string) {
-	//	wg := sync.WaitGroup{}
-	//	for i := 0; i < numNodes; i++ {
-	//		wg.Add(1)
-	//		go sendToOne(Connections[i], metadata, payload, &wg)
-	//		wg.Wait()
-	//	}
-	//}
-	//
-	//multicast := func(metadata map[string]string, payload []byte, poolId string, client *grpc.Client) {
-	//	sendToAll(client, make(map[string]string), []byte(""), poolId)
-	//}
-	//
-	//multicast(make(map[string]string), []byte("PROVA"), "1", Connections[0])
+	log.Println("App started")
 
 	//seleziono il nodo che effettuerà il multicasting
 	//salvo l'interfaccia della procedura grpc
