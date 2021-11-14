@@ -1,55 +1,30 @@
 package restApi
 
 import (
+	"MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
+	"MulticastSDCCProject/pkg/pool"
+	"MulticastSDCCProject/pkg/rpc"
+	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+	"sync"
 )
 
 type routes struct {
 	router *gin.Engine
 }
 
-func NewRoutes() routes {
-	r := routes{
-		router: gin.Default(),
-	}
-
-	//v1 := r.router.Group("/v1")
-
-	//r.addPing(v1)
-	//r.addUsers(v1)
-
-	return r
-}
-
-func (r routes) Run(addr ...string) error {
-	return r.router.Run()
-}
-
-func main() {
-	router := gin.Default()
-	router.GET("/groups/{id}/:messages", getMessages) //get messages of a group
-	//router.GET("/groups", getInfoGroup)//get info group
-	//router.GET("/albums/:id", getAlbumByID)
-	//router.POST("/groups", addGroup)//add a new group
-	router.POST("/groups/{id}/:messages", sendMessage) //send a message to a group
-	//router.DELETE("/groups/{id}",closeGroup)//close group
-	//router.PUT("/groups/{id}",startGroup)//start a new group
-
-	err := router.Run("8080")
-	if err != nil {
-		return
-	}
-}
-
-func getMembersGroup(c *gin.Context) {
-
-}
-
 func getMessages(c *gin.Context) {
 
-}
+	mId := c.Param("mId")
+	group, ok := MulticastGroups[mId]
+	if !ok {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group" + mId + "not found"})
+	}
 
-func getDeliverQueue(c *gin.Context) {
+	c.IndentedJSON(http.StatusOK, gin.H{"messages": group.Messages})
 
 }
 
@@ -63,56 +38,157 @@ func getInfoGroup(c *gin.Context) {
 		group.groupMu.RUnlock()
 	}
 
+	c.IndentedJSON(http.StatusOK, gin.H{"groups": groups})
+
 }
 
 func addGroup(c *gin.Context) {
+
+	var req MulticastReq
+	err := c.BindJSON(&req)
+
+	multicastId := req.MulticastId
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err})
+	}
+
+	//multicastType, ok := ServiceProto.TypeMulticast[req.MulticastType]
+	//if !ok {
+	//	response(ctx, ok, errors.New("Multicast type not supported"))
+	//}
+	//log.Println("Creating/Joining at multicast with type ", multicastType)
+
+	GMu.Lock()
+	defer GMu.Unlock()
+
+	group, ok := MulticastGroups[multicastId]
+
+	//if ok {
+	//	response(ctx, ok, errors.New("Group already exists"))
+	//}
+
+	registrationAns, err := RegClient.Register(context.Background(), &ServiceProto.RegInfo{
+		MulticastId:   multicastId,
+		MulticastType: multicastType,
+		Port:          uint32(GrpcPort),
+	})
+
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err})
+	}
+
+	members := make(map[string]Member, 0)
+
+	for memberId, member := range registrationAns.GroupInfo.Members {
+		members[memberId] = Member{
+			MemberId: member.Id,
+			Address:  member.Address,
+			Ready:    member.Ready,
+		}
+	}
+
+	group = &MulticastGroup{
+		clientId: registrationAns.ClientId,
+		Group: &MulticastInfo{
+			MulticastId:      registrationAns.GroupInfo.MulticastId,
+			MulticastType:    multicastType.String(),
+			ReceivedMessages: 0,
+			Status:           ServiceProto.Status_name[int32(registrationAns.GroupInfo.Status)],
+			Members:          members,
+		},
+		Messages: make([]Message, 0),
+		groupMu:  sync.RWMutex{},
+	}
+
+	MulticastGroups[registrationAns.GroupInfo.MulticastId] = group
+
+	go InitGroup(registrationAns.GroupInfo, group)
+
+	c.IndentedJSON(http.StatusOK, gin.H{"group": group.Group})
 
 }
 
 func sendMessage(c *gin.Context) {
 
+	mId := c.Param("mId")
+	var req Message
+	err := c.BindJSON(&req)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "error input"})
+	}
+
+	group, ok := MulticastGroups[mId]
+	if !ok {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group" + mId + "not found"})
+	}
+
+	group.groupMu.RLock()
+	defer group.groupMu.RUnlock()
+
+	if ServiceProto.Status(ServiceProto.Status_value[group.Group.Status]) != ServiceProto.Status_ACTIVE {
+		c.IndentedJSON(http.StatusTooEarly, gin.H{"error": "group not ready"})
+		return
+	}
+	log.Println("Trying to multicasting message to group ", mId)
+	//multicastType := group.Group.MulticastType
+	payload := req.Payload
+	//mtype, ok := ServiceProto.TypeMulticast[multicastType]
+
+	log.Println("Trying to sending ", payload)
+
+	pool.Pool.Message <- &rpc.Packet{Message: payload}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message": payload})
 }
 
 func closeGroup(c *gin.Context) {
+
+	mId := c.Param("mId")
+	GMu.RLock()
+	defer GMu.RUnlock()
+
+	group, ok := MulticastGroups[mId]
+
+	if !ok {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group not found"})
+	}
+
+	_, err := ServiceProto.RegistryClient.CloseGroup(context.Background(), &ServiceProto.RequestData{
+		MulticastId: group.Group.MulticastId,
+		ClientId:    mId,
+	}, nil)
+	if err != nil {
+		log.Println("Error in closing group")
+	}
+
+	//ServiceRegistry.Groups[groupInfo.MulticastId].Group.Status = ServiceProto.Status_CLOSED.String()
 
 }
 
 func startGroup(c *gin.Context) {
 
-}
+	mId := c.Param("mId")
 
-// getAlbums responds with the list of all albums as JSON.
-/*func getAlbums(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
-}
+	GMu.RLock()
+	defer GMu.RUnlock()
 
-// postAlbums adds an album from JSON received in the request body.
-func postAlbums(c *gin.Context) {
-	var newAlbum album
+	group, ok := MulticastGroups[mId]
 
-	// Call BindJSON to bind the received JSON to
-	// newAlbum.
-	if err := c.BindJSON(&newAlbum); err != nil {
+	if !ok {
+		statusCode := http.StatusInternalServerError
+		c.IndentedJSON(statusCode, gin.H{"error": errors.New("groups doesn't exist")})
+	}
+
+	info, err := RegClient.StartGroup(context.Background(), &ServiceProto.RequestData{
+		MulticastId: group.Group.MulticastId,
+		ClientId:    group.clientId})
+
+	if err != nil {
+		log.Println("Error in start group ", err.Error())
 		return
 	}
 
-	// Add the new album to the slice.
-	albums = append(albums, newAlbum)
-	c.IndentedJSON(http.StatusCreated, newAlbum)
+	c.IndentedJSON(http.StatusOK, gin.H{"data": info})
+
 }
-
-// getAlbumByID locates the album whose ID value matches the id
-// parameter sent by the client, then returns that album as a response.
-func getAlbumByID(c *gin.Context) {
-	id := c.Param("id")
-
-	// Loop through the list of albums, looking for
-	// an album whose ID value matches the parameter.
-	for _, a := range albums {
-		if a.ID == id {
-			c.IndentedJSON(http.StatusOK, a)
-			return
-		}
-	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
-}*/
