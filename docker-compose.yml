@@ -8,6 +8,8 @@ services:
     container_name: registry
     environment:
       - REGISTRY=true
+    ports:
+        - '90'
 
 
   node1:
