@@ -4,6 +4,7 @@ import (
 	server2 "MulticastSDCCProject/pkg/ServiceRegistry/server"
 	"MulticastSDCCProject/pkg/endToEnd/server"
 	"MulticastSDCCProject/pkg/restApi"
+	"MulticastSDCCProject/pkg/util"
 	"flag"
 	"fmt"
 	"google.golang.org/grpc"
@@ -14,16 +15,16 @@ import (
 
 func main() {
 
-	delay := flag.Uint("DELAY", uint(utils.GetEnvIntWithDefault("DELAY", 0)), "delay for sending operations (ms)")
-	grpcPort := flag.Uint("GRPC_PORT", uint(utils.GetEnvIntWithDefault("GRPC_PORT", 90)), "port number of the grpc server")
-	restPort := flag.Uint("REST_PORT", uint(utils.GetEnvIntWithDefault("REST_PORT", 80)), "port number of the rest server")
-	restPath := flag.String("restPath", utils.GetEnvStringWithDefault("REST_PATH", "/multicast/v1"), "path of the rest api")
-	numThreads := flag.Uint("NUM_THREADS", uint(utils.GetEnvIntWithDefault("NUM_THREADS", 1)), "number of threads used to multicast messages")
-	verb := flag.Bool("VERBOSE", utils.GetEnvBoolWithDefault("VERBOSE", true), "Turn verbose mode on or off.")
-	registry_addr := flag.String("REGISTRY_ADDR", "registry:90", "service registry address")
-	r := flag.Bool("REGISTRY", utils.GetEnvBoolWithDefault("REGISTRY", false), "start multicast registry")
-	application := flag.Bool("APP", utils.GetEnvBoolWithDefault("APP", false), "start multicast application")
-	myId := flag.Int("ID", utils.GetEnvIntWithDefault("ID", 0), "number id of member")
+	delay := flag.Uint("delay", uint(util.GetEnvIntWithDefault("DELAY", 0)), "delay for sending operations (ms)")
+	grpcPort := flag.Uint("rpcPort", uint(util.GetEnvIntWithDefault("GRPC_PORT", 90)), "port number of the grpc server")
+	restPort := flag.Uint("restPort", uint(util.GetEnvIntWithDefault("REST_PORT", 80)), "port number of the rest server")
+	restPath := flag.String("restPath", util.GetEnvStringWithDefault("REST_PATH", "/multicast/v1"), "path of the rest api")
+	numThreads := flag.Uint("nThreads", uint(util.GetEnvIntWithDefault("NUM_THREADS", 1)), "number of threads used to multicast messages")
+	verb := flag.Bool("verbose", util.GetEnvBoolWithDefault("VERBOSE", true), "Turn verbose mode on or off.")
+	registry_addr := flag.String("registryAddr", "registry:90", "service registry address")
+	r := flag.Bool("registry", util.GetEnvBoolWithDefault("REGISTRY", false), "start multicast registry")
+	application := flag.Bool("application", util.GetEnvBoolWithDefault("APP", false), "start multicast application")
+	//myId := flag.Int("id", util.GetEnvIntWithDefault("ID", 0), "number id of member")
 
 	//utils.Myid = *myId
 	flag.Parse()
@@ -62,6 +63,7 @@ func main() {
 		}
 		wg.Done()
 	}()
+	wg.Wait()
 
 	if *application {
 
@@ -74,7 +76,7 @@ func main() {
 			}
 			wg.Done()
 		}()
-
+		wg.Wait()
 	}
 
 	log.Println("App started")

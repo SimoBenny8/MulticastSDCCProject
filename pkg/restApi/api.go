@@ -53,24 +53,20 @@ func addGroup(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err})
 	}
 
-	//multicastType, ok := ServiceProto.TypeMulticast[req.MulticastType]
-	//if !ok {
-	//	response(ctx, ok, errors.New("Multicast type not supported"))
-	//}
-	//log.Println("Creating/Joining at multicast with type ", multicastType)
+	multicastType, ok := ServiceProto.TypeMulticast_value[req.MulticastType]
+	if !ok {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "multicast type not supported"})
+	}
+	log.Println("Creating multicast with type ", ServiceProto.TypeMulticast(multicastType))
 
 	GMu.Lock()
 	defer GMu.Unlock()
 
-	group, ok := MulticastGroups[multicastId]
-
-	//if ok {
-	//	response(ctx, ok, errors.New("Group already exists"))
-	//}
+	group, _ := MulticastGroups[multicastId]
 
 	registrationAns, err := RegClient.Register(context.Background(), &ServiceProto.RegInfo{
 		MulticastId:   multicastId,
-		MulticastType: multicastType,
+		MulticastType: ServiceProto.TypeMulticast(multicastType),
 		Port:          uint32(GrpcPort),
 	})
 
@@ -92,7 +88,7 @@ func addGroup(c *gin.Context) {
 		clientId: registrationAns.ClientId,
 		Group: &MulticastInfo{
 			MulticastId:      registrationAns.GroupInfo.MulticastId,
-			MulticastType:    multicastType.String(),
+			MulticastType:    ServiceProto.TypeMulticast(multicastType).String(),
 			ReceivedMessages: 0,
 			Status:           ServiceProto.Status_name[int32(registrationAns.GroupInfo.Status)],
 			Members:          members,
@@ -103,7 +99,7 @@ func addGroup(c *gin.Context) {
 
 	MulticastGroups[registrationAns.GroupInfo.MulticastId] = group
 
-	go InitGroup(registrationAns.GroupInfo, group)
+	go InitGroup(registrationAns.GroupInfo, group, GrpcPort)
 
 	c.IndentedJSON(http.StatusOK, gin.H{"group": group.Group})
 
@@ -133,7 +129,7 @@ func sendMessage(c *gin.Context) {
 	log.Println("Trying to multicasting message to group ", mId)
 	//multicastType := group.Group.MulticastType
 	payload := req.Payload
-	//mtype, ok := ServiceProto.TypeMulticast[multicastType]
+	//mtype, ok := ServiceProto.TypeMulticast_value[multicastType]
 
 	log.Println("Trying to sending ", payload)
 
@@ -161,8 +157,6 @@ func closeGroup(c *gin.Context) {
 	if err != nil {
 		log.Println("Error in closing group")
 	}
-
-	//ServiceRegistry.Groups[groupInfo.MulticastId].Group.Status = ServiceProto.Status_CLOSED.String()
 
 }
 
