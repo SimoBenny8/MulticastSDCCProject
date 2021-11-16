@@ -12,38 +12,33 @@ func (a OrderedMessages) Less(i, j int) bool { return a[i].Timestamp < a[j].Time
 func (a OrderedMessages) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 //func che ordina i messaggi in coda
-func OrderingMessage(messages []MessageTimestamp) OrderedMessages {
+func (node *NodeSC) OrderingMessage(messages []MessageTimestamp) OrderedMessages {
 	log.Println("riordino i messaggi")
-	sort.Sort(OrderedMessages(messages))
+	sort.Sort(node.DeliverQueue)
 	return messages
 }
 
 // Create
-var queue OrderedMessages
-
-func GetQueue() OrderedMessages {
-	return queue
-}
 
 func init() {
-	queue = make(OrderedMessages, 0, 100)
+	//queue = make(OrderedMessages, 0, 100)
 }
 
-func AddToQueue(m *MessageTimestamp) {
+func (node *NodeSC) AddToQueue(m *MessageTimestamp) {
 
 	log.Println("messaggio aggiunto in coda")
-	queue = append(queue, *m)
-	queue = OrderingMessage(queue)
+	node.DeliverQueue = append(node.DeliverQueue, *m)
+	node.DeliverQueue = node.OrderingMessage(node.DeliverQueue)
 	return
 }
 
-func Dequeue() MessageTimestamp {
+func (node *NodeSC) Dequeue() MessageTimestamp {
 	log.Println("prendo il primo elemento della coda")
-	m := queue[0]
-	if len(queue) > 1 {
-		queue = queue[1:]
+	m := node.DeliverQueue[0]
+	if len(node.DeliverQueue) > 1 {
+		node.DeliverQueue = node.DeliverQueue[1:]
 	} else {
-		queue = queue[:0]
+		node.DeliverQueue = node.DeliverQueue[:0]
 	}
 	return m
 }

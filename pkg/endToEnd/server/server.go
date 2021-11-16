@@ -13,7 +13,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"strings"
 	"sync"
 )
 
@@ -102,12 +101,15 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			case util.SCMULTICAST:
 				log.Println("case SCMulticast")
 				if md.Get(util.ACK)[0] == util.TRUE {
-					impl.AppendOrderedAck(message)
+					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
+					impl.AppendOrderedAck(message, uint(id))
 				} else if md.Get(util.DELIVER)[0] == util.TRUE {
 					log.Println("deliver called for message: " + string(message.Message))
-					//util.AppendMessageToBeDeliver(message)
+					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
+					impl.AppendDeliverQueue(message, uint(id))
 				} else {
-					impl.AddingRecevingMex(message)
+					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
+					impl.AddingReceivingMex(message, uint(id))
 				}
 			case util.SQMULTICAST:
 				log.Println("case SQMulticast")
@@ -146,15 +148,4 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 		}
 	}
 	return &rpc.ResponsePacket{}, nil
-}
-
-func DeliverMulticast(packet rpc.Packet) DeliverObject {
-	if !strings.Contains(string(packet.Message), "ack") && impl.GetQueue().Len() > 0 { //TODO: sistemare priorità dei messaggi di deliver
-		mexInQueue := impl.Dequeue()
-		log.Println("deliver called for message: " + string(mexInQueue.OPacket.Message))
-		return DeliverObject{packet}
-	} else if strings.Contains(string(packet.Message), "ack") {
-		return DeliverObject{}
-	}
-	return DeliverObject{}
 }

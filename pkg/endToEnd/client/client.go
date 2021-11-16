@@ -34,7 +34,7 @@ func Connect(address string) *Client {
 }
 
 //method to send message
-func (c *Client) Send(messageMetadata map[string]string, payload []byte, respChannel chan []byte) error {
+func (c *Client) Send(messageMetadata map[string]string, payload []byte, respChannel chan []byte) error { //TODO: aggiungere delay
 	var wg sync.Mutex
 	log.Println("Sender: ", c.Connection.Target())
 	wg.Lock()

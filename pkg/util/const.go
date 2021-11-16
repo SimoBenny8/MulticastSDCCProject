@@ -17,4 +17,5 @@ const (
 	EMPTY            = ""
 	DELIVER          = "deliver"
 	RECEIVER         = "Receiver"
+	NODEID           = "NodeId"
 )

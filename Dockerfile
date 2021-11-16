@@ -7,6 +7,6 @@ COPY . .
 
 
 RUN go get ./... & \
-    go install -v MulticastSDCCProject/cmd/multicast
+    go install -v github.com/SimoBenny8/MulticastSDCCProject/cmd/multicast
 
 CMD [ "multicast" ]
