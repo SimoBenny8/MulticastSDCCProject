@@ -3,44 +3,58 @@ package impl
 import (
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/rpc"
-	"sync"
 )
-
-type AckNode struct {
-	id          string
-	connections []*client.Client
-	mutex       sync.Mutex
-}
 
 type OtherTimestamp struct {
 	id                 string
 	otherNodeTimestamp int
 }
 
+type NodeSC struct {
+	NodeId            uint
+	Connections       []*client.Client
+	DeliverQueue      OrderedMessages
+	MyConn            *client.Client
+	ProcessingMessage []*rpc.Packet
+	Timestamp         int
+	OtherTs           []OtherTimestamp
+	OrderedAck        []MessageTimestamp
+}
+
 var (
-	otherTs    []OtherTimestamp
-	Node       *AckNode
-	orderedAck []MessageTimestamp
+	Nodes []NodeSC
 )
 
 func init() {
-	orderedAck = make([]MessageTimestamp, 0, 100)
-	otherTs = make([]OtherTimestamp, 0, 100)
-	Node = &AckNode{
-		id:          "",
-		connections: connections,
-		mutex:       sync.Mutex{},
-	}
+
+	Nodes = make([]NodeSC, 0, 100)
+
 }
 
-func AppendOrderedAck(ack *rpc.Packet) {
+func AppendDeliverQueue(mex *rpc.Packet, nodeId uint) {
+	m := DecodeMsg(mex)
+	pos := checkPositionNode(nodeId)
+	Nodes[pos].DeliverQueue = append(Nodes[pos].DeliverQueue, *m)
+}
+
+func AppendOrderedAck(ack *rpc.Packet, nodeId uint) {
 	m := DecodeMsg(ack)
-	orderedAck = append(orderedAck, *m)
-	otherTs = append(otherTs, OtherTimestamp{
+	pos := checkPositionNode(nodeId)
+	Nodes[pos].OrderedAck = append(Nodes[pos].OrderedAck, *m)
+	Nodes[pos].OtherTs = append(Nodes[pos].OtherTs, OtherTimestamp{
 		id:                 m.Id,
 		otherNodeTimestamp: m.FirstTsInQueue,
 	})
 	return
+}
+
+func checkPositionNode(id uint) int {
+	for i := range Nodes {
+		if Nodes[i].NodeId == id {
+			return i
+		}
+	}
+	return 0
 }
 
 func removeForMessageTimestamp(slice []MessageTimestamp, s int) []MessageTimestamp {
@@ -51,10 +65,11 @@ func removeForOtherTimestamps(slice []OtherTimestamp, s int) []OtherTimestamp {
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func EmptyOtherTimestamp(idMex string) {
-	for i := range otherTs {
-		if otherTs[i].id == idMex {
-			removeForOtherTimestamps(otherTs, i)
+func EmptyOtherTimestamp(idMex string, nodeId uint) {
+	pos := checkPositionNode(nodeId)
+	for i := range Nodes[pos].OtherTs {
+		if Nodes[pos].OtherTs[i].id == idMex {
+			removeForOtherTimestamps(Nodes[pos].OtherTs, i)
 		}
 	}
 
@@ -62,11 +77,16 @@ func EmptyOtherTimestamp(idMex string) {
 
 }
 
-func EmptyOrderedAck(idMex string) { //svuota l'array
+func AppendNodes(node NodeSC) {
+	Nodes = append(Nodes, node)
 
-	for i := range orderedAck {
-		if orderedAck[i].Id == idMex {
-			removeForMessageTimestamp(orderedAck, i)
+}
+
+func EmptyOrderedAck(idMex string, nodeId uint) { //svuota l'array
+	pos := checkPositionNode(nodeId)
+	for i := range Nodes[pos].OrderedAck {
+		if Nodes[pos].OrderedAck[i].Id == idMex {
+			removeForMessageTimestamp(Nodes[pos].OrderedAck, i)
 		}
 	}
 	return

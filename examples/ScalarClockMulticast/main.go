@@ -56,10 +56,22 @@ func main() {
 
 	}
 
-	pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, *port)
-	go impl.Receive(connections, *port)
-	go impl.Deliver(myConn, len(connections))
-	impl.SetConnections(connections)
+	node := new(impl.NodeSC)
+	node.NodeId = uint(rand.Intn(5))
+	node.Connections = connections
+	node.DeliverQueue = make(impl.OrderedMessages, 0, 100)
+	node.MyConn = myConn
+	node.ProcessingMessage = make([]*rpc.Packet, 0, 100)
+	node.Timestamp = 0
+	node.OrderedAck = make(impl.OrderedMessages, 0, 100)
+	node.OtherTs = make([]impl.OtherTimestamp, 0, 100)
+
+	impl.AppendNodes(*node)
+
+	pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, *port, node.NodeId)
+	go impl.Receive(*port, node.NodeId)
+	go impl.Deliver(myConn, len(connections), node.NodeId)
+
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Insert message: ")
 	for scanner.Scan() {

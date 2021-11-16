@@ -21,20 +21,20 @@ var (
 	Pool ThreadPool
 )
 
-func (t *ThreadPool) InitThreadPool(connections []*client.Client, numTh int, multicastType string, respChannel chan []byte, port uint) {
+func (t *ThreadPool) InitThreadPool(connections []*client.Client, numTh int, multicastType string, respChannel chan []byte, port uint, nodeId uint) {
 	t.Message = make(chan *rpc.Packet, 30)
 
 	Pool.Wg.Lock()
 
 	for i := 0; i < numTh; i++ {
-		go getMessages(Pool.Message, multicastType, connections, respChannel, port)
+		go getMessages(Pool.Message, multicastType, connections, respChannel, port, nodeId)
 	}
 
 	Pool.Wg.Unlock()
 
 }
 
-func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*client.Client, respChannel chan []byte, port uint) {
+func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*client.Client, respChannel chan []byte, port uint, nodeId uint) {
 	var localErr error
 	seq := SQMulticast.GetSequencer()
 	for {
@@ -55,8 +55,8 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 					log.Println("Error in sending to node")
 				}
 			} else if multicastType == util.SCMULTICAST {
-				message := &impl.MessageTimestamp{Address: port, OPacket: *mex, Timestamp: impl.GetTimestamp(), Id: impl.RandSeq(5)}
-				impl.SendMessageToAll(message)
+				message := &impl.MessageTimestamp{Address: port, OPacket: *mex, Timestamp: impl.GetTimestamp(nodeId), Id: impl.RandSeq(5)}
+				impl.SendMessageToAll(message, nodeId)
 
 			} else if multicastType == util.VCMULTICAST {
 				VectorClockMulticast.SendMessageToAll(mex, port)
