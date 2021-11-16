@@ -1,4 +1,4 @@
-package impl
+package MulticastScalarClock
 
 import (
 	"MulticastSDCCProject/pkg/endToEnd/client"

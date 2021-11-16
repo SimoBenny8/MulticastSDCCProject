@@ -1,7 +1,7 @@
 package restApi
 
 import (
-	"MulticastSDCCProject/pkg/MulticastScalarClock/impl"
+	"MulticastSDCCProject/pkg/MulticastScalarClock"
 	"MulticastSDCCProject/pkg/SQMulticast"
 	"MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
 	client1 "MulticastSDCCProject/pkg/ServiceRegistry/client"
@@ -171,7 +171,7 @@ func InitGroup(info *ServiceProto.Group, group *MulticastGroup, port uint) {
 		go SQMulticast.DeliverSeq()
 	}
 	if groupInfo.MulticastType.String() == util.SCMULTICAST {
-		go impl.Deliver(myConn, len(connections))
+		go MulticastScalarClock.Deliver(myConn, len(connections))
 	}
 	// Waiting tha all other nodes are ready
 	update(groupInfo, group)
@@ -219,7 +219,7 @@ func initGroupCommunication(groupInfo *ServiceProto.Group, port uint, connection
 	if groupInfo.MulticastType.String() == "SCMULTICAST" {
 		log.Println("STARTING SCMULTICAST")
 		pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, port)
-		go impl.Receive(connections, port)
+		go MulticastScalarClock.Receive(connections, port)
 	}
 	if groupInfo.MulticastType.String() == "VCMULTICAST" {
 		log.Println("STARTING VCMULTICAST")

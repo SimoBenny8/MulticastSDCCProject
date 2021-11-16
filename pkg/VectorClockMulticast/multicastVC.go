@@ -1,7 +1,6 @@
 package VectorClockMulticast
 
 import (
-	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/rpc"
 	"MulticastSDCCProject/pkg/util"
 	"bytes"
@@ -27,18 +26,10 @@ type MessageVectorTimestamp struct {
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-//var processingMessage []*rpc.Packet
-var respChannel chan []byte
-var localTimestamp []int
-var network bytes.Buffer
-var connections []*client.Client
-var IndexNode int32
-var myNode int32
-
-func InitLocalTimestamp(wg *sync.Mutex, numNode int) {
-	localTimestamp = make([]int, numNode)
-	for i := range localTimestamp {
-		localTimestamp[i] = 0
+func (node *NodeVC) InitLocalTimestamp(wg *sync.Mutex, numNode int) {
+	node.Timestamp = make([]int, numNode)
+	for i := range node.Timestamp {
+		node.Timestamp[i] = 0
 	}
 	wg.Unlock()
 }
@@ -51,23 +42,12 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func GetVectorTimestamp() []int {
-	return localTimestamp
-}
+func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint) {
 
-func SetMyNode(node int32) {
-	myNode = node
-}
-
-func SetConnections(conn []*client.Client) {
-	connections = conn
-}
-
-func SendMessageToAll(m *rpc.Packet, port uint) {
-
+	pos := checkPositionNode(nodeId)
 	var wg sync.WaitGroup
-	localTimestamp[myNode] += 1
-	mex := &MessageVectorTimestamp{Address: port, OPacket: *m, Timestamp: localTimestamp, Id: RandSeq(5)}
+	Nodes[pos].Timestamp[Nodes[pos].myNode] += 1
+	mex := &MessageVectorTimestamp{Address: port, OPacket: *m, Timestamp: Nodes[pos].Timestamp, Id: RandSeq(5)}
 
 	b, err := json.Marshal(&mex)
 	if err != nil {
@@ -79,11 +59,12 @@ func SendMessageToAll(m *rpc.Packet, port uint) {
 	md[util.ACK] = util.FALSE
 	md[util.TIMESTAMPMESSAGE] = util.EMPTY
 	md[util.DELIVER] = util.FALSE
-	for i := range connections {
+	md[util.NODEID] = strconv.Itoa(int(nodeId))
+	for i := range Nodes[pos].Connections {
 		wg.Add(1)
 		ind := i
 		go func() {
-			err = connections[ind].Send(md, b, nil)
+			err = Nodes[pos].Connections[ind].Send(md, b, nil)
 			//result := <-respChannel
 			//log.Println("ack: ", string(result))
 			if err != nil {
@@ -96,8 +77,9 @@ func SendMessageToAll(m *rpc.Packet, port uint) {
 	wg.Wait()
 }
 
-func ReceiveMessage(message *rpc.Packet) {
+func ReceiveMessage(message *rpc.Packet, nodeId uint) {
 	//var err error
+	pos := checkPositionNode(nodeId)
 	var wg sync.Mutex
 	wg.Lock()
 	mt := DecodeMsg(message, &wg)
@@ -105,7 +87,7 @@ func ReceiveMessage(message *rpc.Packet) {
 
 	log.Println("Original Message: ", string(mt.OPacket.Message), "Timestamp: ", mt.Timestamp)
 	wg.Lock()
-	AddToQueue(mt, &wg)
+	Nodes[pos].AddToQueue(mt, &wg)
 
 }
 
@@ -127,12 +109,13 @@ func DecodeMsg(message *rpc.Packet, wg *sync.Mutex) *MessageVectorTimestamp {
 
 }
 
-func HasSameNumberMessage(mex *MessageVectorTimestamp) bool {
+func HasSameNumberMessage(mex *MessageVectorTimestamp, nodeId uint) bool {
+	pos := checkPositionNode(nodeId)
 	resp := false
-	for i := range connections {
-		if i != int(myNode) {
-			if mex.Timestamp[i] <= localTimestamp[i] {
-				log.Println("mex: ", mex.Timestamp[i], " local: ", localTimestamp[i])
+	for i := range Nodes[pos].Connections {
+		if i != int(Nodes[pos].myNode) {
+			if mex.Timestamp[i] <= Nodes[pos].Timestamp[i] {
+				log.Println("mex: ", mex.Timestamp[i], " local: ", Nodes[pos].Timestamp[i])
 				resp = true
 			}
 		}
@@ -140,10 +123,11 @@ func HasSameNumberMessage(mex *MessageVectorTimestamp) bool {
 	return resp
 }
 
-func indexSender(mex *MessageVectorTimestamp) int {
+func indexSender(mex *MessageVectorTimestamp, nodeId uint) int {
+	pos := checkPositionNode(nodeId)
 	var index int
-	for i := range connections {
-		if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(mex.Address))) {
+	for i := range Nodes[pos].Connections {
+		if strings.Contains(Nodes[pos].Connections[i].Connection.Target(), strconv.Itoa(int(mex.Address))) {
 			index = i
 			break
 		}
@@ -151,24 +135,25 @@ func indexSender(mex *MessageVectorTimestamp) int {
 	return index
 }
 
-func nextMessageTimestamp(mex *MessageVectorTimestamp) bool {
-	index := indexSender(mex)
-	if mex.Timestamp[index] == (localTimestamp[index] + 1) {
-		log.Println("next message timestamp 1: ", mex.Timestamp[index], " 2: ", localTimestamp[index]+1)
+func nextMessageTimestamp(mex *MessageVectorTimestamp, nodeId uint) bool {
+	pos := checkPositionNode(nodeId)
+	index := indexSender(mex, nodeId)
+	if mex.Timestamp[index] == (Nodes[pos].Timestamp[index] + 1) {
+		log.Println("next message timestamp 1: ", mex.Timestamp[index], " 2: ", Nodes[pos].Timestamp[index]+1)
 		return true
-	} else if index == int(myNode) {
+	} else if index == int(Nodes[pos].myNode) {
 		//caso deliver stesso nodo
 		return true
 	}
 	return false
 }
 
-func Deliver(myConn *client.Client) {
+func Deliver(nodeId uint) {
 	rand.Seed(time.Now().UnixNano())
-
+	pos := checkPositionNode(nodeId)
 	for {
-		if len(GetQueue()) > 0 && nextMessageTimestamp(&queue[0]) && HasSameNumberMessage(&queue[0]) {
-			message := Dequeue()
+		if len(Nodes[pos].DeliverQueue) > 0 && nextMessageTimestamp(&Nodes[pos].DeliverQueue[0], Nodes[pos].NodeId) && HasSameNumberMessage(&Nodes[pos].DeliverQueue[0], Nodes[pos].NodeId) {
+			message := Nodes[pos].Dequeue()
 			var wg sync.Mutex
 			wg.Lock()
 			var LocalErr error
@@ -177,23 +162,24 @@ func Deliver(myConn *client.Client) {
 			md[util.ACK] = util.FALSE
 			md[util.TIMESTAMPMESSAGE] = util.EMPTY
 			md[util.DELIVER] = util.TRUE
-			index := indexSender(&message)
+			md[util.NODEID] = strconv.Itoa(int(Nodes[pos].NodeId))
+			index := indexSender(&message, Nodes[pos].NodeId)
 			for i := range message.Timestamp {
-				localTimestamp[i] = int(math.Max(float64(message.Timestamp[i]), float64(localTimestamp[i])))
+				Nodes[pos].Timestamp[i] = int(math.Max(float64(message.Timestamp[i]), float64(Nodes[pos].Timestamp[i])))
 				//log.Println("timestamp locale: ", localTimestamp)
 			}
-			localTimestamp[index] += 1
+			Nodes[pos].Timestamp[index] += 1
 			metaData := metadata.New(md)
 			ctx := metadata.NewOutgoingContext(context.Background(), metaData)
 			go func(wg *sync.Mutex) {
 				defer wg.Unlock()
-				_, LocalErr = myConn.Client.SendPacket(ctx, &message.OPacket)
+				_, LocalErr = Nodes[pos].MyConn.Client.SendPacket(ctx, &message.OPacket)
 				if LocalErr != nil {
 					log.Println(LocalErr.Error())
-					localTimestamp[index] -= 1
+					Nodes[pos].Timestamp[index] -= 1
 					var wg2 sync.Mutex
 					wg2.Lock()
-					AddToQueue(&message, &wg2)
+					Nodes[pos].AddToQueue(&message, &wg2)
 				}
 			}(&wg)
 
