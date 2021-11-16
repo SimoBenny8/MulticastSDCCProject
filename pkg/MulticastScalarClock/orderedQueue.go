@@ -1,4 +1,4 @@
-package impl
+package MulticastScalarClock
 
 import (
 	"log"
@@ -19,10 +19,6 @@ func (node *NodeSC) OrderingMessage(messages []MessageTimestamp) OrderedMessages
 }
 
 // Create
-
-func init() {
-	//queue = make(OrderedMessages, 0, 100)
-}
 
 func (node *NodeSC) AddToQueue(m *MessageTimestamp) {
 

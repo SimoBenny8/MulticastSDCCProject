@@ -1,7 +1,7 @@
 package main
 
 import (
-	"MulticastSDCCProject/pkg/MulticastScalarClock/impl"
+	"MulticastSDCCProject/pkg/MulticastScalarClock"
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/endToEnd/server"
 	"MulticastSDCCProject/pkg/pool"
@@ -56,21 +56,21 @@ func main() {
 
 	}
 
-	node := new(impl.NodeSC)
+	node := new(MulticastScalarClock.NodeSC)
 	node.NodeId = uint(rand.Intn(5))
 	node.Connections = connections
-	node.DeliverQueue = make(impl.OrderedMessages, 0, 100)
+	node.DeliverQueue = make(MulticastScalarClock.OrderedMessages, 0, 100)
 	node.MyConn = myConn
 	node.ProcessingMessage = make([]*rpc.Packet, 0, 100)
 	node.Timestamp = 0
-	node.OrderedAck = make(impl.OrderedMessages, 0, 100)
-	node.OtherTs = make([]impl.OtherTimestamp, 0, 100)
+	node.OrderedAck = make(MulticastScalarClock.OrderedMessages, 0, 100)
+	node.OtherTs = make([]MulticastScalarClock.OtherTimestamp, 0, 100)
 
-	impl.AppendNodes(*node)
+	MulticastScalarClock.AppendNodes(*node)
 
 	pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, *port, node.NodeId)
-	go impl.Receive(*port, node.NodeId)
-	go impl.Deliver(myConn, len(connections), node.NodeId)
+	go MulticastScalarClock.Receive(*port, node.NodeId)
+	go MulticastScalarClock.Deliver(myConn, len(connections), node.NodeId)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Insert message: ")

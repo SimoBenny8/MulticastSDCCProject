@@ -66,12 +66,19 @@ func main() {
 		}
 	}
 
+	node := new(VectorClockMulticast.NodeVC)
 	wg.Lock()
-	VectorClockMulticast.InitLocalTimestamp(&wg, len(connections))
-	VectorClockMulticast.SetMyNode(myNode)
-	VectorClockMulticast.SetConnections(connections)
-	pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, *port)
-	go VectorClockMulticast.Deliver(myConn)
+	node.InitLocalTimestamp(&wg, len(connections))
+	node.NodeId = uint(rand.Intn(5))
+	node.Connections = connections
+	node.DeliverQueue = make(VectorClockMulticast.VectorMessages, 0, 100)
+	node.MyConn = myConn
+	node.ProcessingMessages = make(VectorClockMulticast.VectorMessages, 0, 100)
+
+	VectorClockMulticast.AppendNodes(*node)
+
+	pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, *port, node.NodeId)
+	go VectorClockMulticast.Deliver(node.NodeId)
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Insert message: ")
 	for scanner.Scan() {

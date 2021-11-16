@@ -1,36 +1,43 @@
 package VectorClockMulticast
 
 import (
+	"MulticastSDCCProject/pkg/endToEnd/client"
 	"log"
 	"sync"
 )
 
 type VectorMessages []MessageVectorTimestamp
 
+type NodeVC struct {
+	NodeId             uint
+	Connections        []*client.Client
+	DeliverQueue       VectorMessages
+	MyConn             *client.Client
+	Timestamp          []int
+	ProcessingMessages VectorMessages
+	myNode             int32
+}
+
 // Create
 var queue VectorMessages
 
-func GetQueue() VectorMessages {
-	return queue
-}
-
 func init() {
-	queue = make(VectorMessages, 0, 100)
+	//	queue = make(VectorMessages, 0, 100)
 }
 
-func AddToQueue(m *MessageVectorTimestamp, wg *sync.Mutex) {
+func (node *NodeVC) AddToQueue(m *MessageVectorTimestamp, wg *sync.Mutex) {
 	defer wg.Unlock()
 	log.Println("messaggio aggiunto in coda")
-	queue = append(queue, *m)
+	node.ProcessingMessages = append(node.ProcessingMessages, *m)
 }
 
-func Dequeue() MessageVectorTimestamp {
+func (node *NodeVC) Dequeue() MessageVectorTimestamp {
 	log.Println("prendo il primo elemento della coda")
-	m := queue[0]
-	if len(queue) > 1 {
-		queue = queue[1:]
+	m := node.ProcessingMessages[0]
+	if len(node.ProcessingMessages) > 1 {
+		node.ProcessingMessages = node.ProcessingMessages[1:]
 	} else {
-		queue = queue[:0]
+		node.ProcessingMessages = node.ProcessingMessages[:0]
 	}
 	return m
 }

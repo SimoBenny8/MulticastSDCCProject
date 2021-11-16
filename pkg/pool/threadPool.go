@@ -1,7 +1,7 @@
 package pool
 
 import (
-	"MulticastSDCCProject/pkg/MulticastScalarClock/impl"
+	"MulticastSDCCProject/pkg/MulticastScalarClock"
 	"MulticastSDCCProject/pkg/SQMulticast"
 	"MulticastSDCCProject/pkg/VectorClockMulticast"
 	"MulticastSDCCProject/pkg/endToEnd/client"
@@ -55,11 +55,11 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 					log.Println("Error in sending to node")
 				}
 			} else if multicastType == util.SCMULTICAST {
-				message := &impl.MessageTimestamp{Address: port, OPacket: *mex, Timestamp: impl.GetTimestamp(nodeId), Id: impl.RandSeq(5)}
-				impl.SendMessageToAll(message, nodeId)
+				message := &MulticastScalarClock.MessageTimestamp{Address: port, OPacket: *mex, Timestamp: MulticastScalarClock.GetTimestamp(nodeId), Id: MulticastScalarClock.RandSeq(5)}
+				MulticastScalarClock.SendMessageToAll(message, nodeId)
 
 			} else if multicastType == util.VCMULTICAST {
-				VectorClockMulticast.SendMessageToAll(mex, port)
+				VectorClockMulticast.SendMessageToAll(mex, port, nodeId)
 
 			} else if multicastType == util.BMULTICAST {
 				for i := range connections {

@@ -1,7 +1,7 @@
 package server
 
 import (
-	"MulticastSDCCProject/pkg/MulticastScalarClock/impl"
+	"MulticastSDCCProject/pkg/MulticastScalarClock"
 	"MulticastSDCCProject/pkg/SQMulticast"
 	"MulticastSDCCProject/pkg/VectorClockMulticast"
 	"MulticastSDCCProject/pkg/rpc"
@@ -102,14 +102,14 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 				log.Println("case SCMulticast")
 				if md.Get(util.ACK)[0] == util.TRUE {
 					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
-					impl.AppendOrderedAck(message, uint(id))
+					MulticastScalarClock.AppendOrderedAck(message, uint(id))
 				} else if md.Get(util.DELIVER)[0] == util.TRUE {
 					log.Println("deliver called for message: " + string(message.Message))
 					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
-					impl.AppendDeliverQueue(message, uint(id))
+					MulticastScalarClock.AppendDeliverQueue(message, uint(id))
 				} else {
 					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
-					impl.AddingReceivingMex(message, uint(id))
+					MulticastScalarClock.AddingReceivingMex(message, uint(id))
 				}
 			case util.SQMULTICAST:
 				log.Println("case SQMulticast")
@@ -135,9 +135,12 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			case util.VCMULTICAST:
 				log.Println("case VCMulticast")
 				if md.Get(util.DELIVER)[0] == util.TRUE {
+					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
+					VectorClockMulticast.AppendDeliverQueue(message, uint(id))
 					log.Println("deliver called for message: " + string(message.Message))
 				} else {
-					VectorClockMulticast.ReceiveMessage(message)
+					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
+					VectorClockMulticast.ReceiveMessage(message, uint(id))
 				}
 			default:
 				panic("unrecognized value")
