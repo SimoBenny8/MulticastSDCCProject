@@ -103,10 +103,11 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 				if md.Get(util.ACK)[0] == util.TRUE {
 					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
 					MulticastScalarClock.AppendOrderedAck(message, uint(id))
+					//MulticastScalarClock.AppendProcessingMessages(message, uint(id))
 				} else if md.Get(util.DELIVER)[0] == util.TRUE {
 					log.Println("deliver called for message: " + string(message.Message))
 					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
-					MulticastScalarClock.AppendDeliverQueue(message, uint(id))
+					MulticastScalarClock.AppendDeliverMessages(message, uint(id))
 				} else {
 					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
 					MulticastScalarClock.AddingReceivingMex(message, uint(id))

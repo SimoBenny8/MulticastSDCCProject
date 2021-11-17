@@ -4,9 +4,7 @@ import (
 	"MulticastSDCCProject/pkg/rpc"
 	"MulticastSDCCProject/pkg/util"
 	"bytes"
-	"context"
 	"encoding/json"
-	"google.golang.org/grpc/metadata"
 	"log"
 	"math"
 	"math/rand"
@@ -42,11 +40,11 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint) {
+func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 
 	pos := checkPositionNode(nodeId)
 	var wg sync.WaitGroup
-	Nodes[pos].Timestamp[Nodes[pos].myNode] += 1
+	Nodes[pos].Timestamp[Nodes[pos].MyNode] += 1
 	mex := &MessageVectorTimestamp{Address: port, OPacket: *m, Timestamp: Nodes[pos].Timestamp, Id: RandSeq(5)}
 
 	b, err := json.Marshal(&mex)
@@ -64,7 +62,7 @@ func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint) {
 		wg.Add(1)
 		ind := i
 		go func() {
-			err = Nodes[pos].Connections[ind].Send(md, b, nil)
+			err = Nodes[pos].Connections[ind].Send(md, b, nil, delay)
 			//result := <-respChannel
 			//log.Println("ack: ", string(result))
 			if err != nil {
@@ -87,7 +85,7 @@ func ReceiveMessage(message *rpc.Packet, nodeId uint) {
 
 	log.Println("Original Message: ", string(mt.OPacket.Message), "Timestamp: ", mt.Timestamp)
 	wg.Lock()
-	Nodes[pos].AddToQueue(mt, &wg)
+	Nodes[pos].AddToProcessingQueue(mt, &wg)
 
 }
 
@@ -98,8 +96,12 @@ func DecodeMsg(message *rpc.Packet, wg *sync.Mutex) *MessageVectorTimestamp {
 	log.Println("decodifica del messaggio")
 	var err error
 	message.Message = bytes.TrimPrefix(message.Message, []byte("\xef\xbb\xbf"))
-	if err = json.Unmarshal(message.Message, &m); err != nil {
-		panic(err)
+	err = json.Unmarshal(message.Message, &m)
+	if err != nil {
+		log.Printf("error decoding sakura response: %v", err)
+		if e, ok := err.(*json.SyntaxError); ok {
+			log.Printf("syntax error at byte offset %d", e.Offset)
+		}
 	}
 	log.Println("messaggio codificato: ", string(m.OPacket.Message))
 	if err != nil {
@@ -113,7 +115,7 @@ func HasSameNumberMessage(mex *MessageVectorTimestamp, nodeId uint) bool {
 	pos := checkPositionNode(nodeId)
 	resp := false
 	for i := range Nodes[pos].Connections {
-		if i != int(Nodes[pos].myNode) {
+		if i != int(Nodes[pos].MyNode) {
 			if mex.Timestamp[i] <= Nodes[pos].Timestamp[i] {
 				log.Println("mex: ", mex.Timestamp[i], " local: ", Nodes[pos].Timestamp[i])
 				resp = true
@@ -141,18 +143,18 @@ func nextMessageTimestamp(mex *MessageVectorTimestamp, nodeId uint) bool {
 	if mex.Timestamp[index] == (Nodes[pos].Timestamp[index] + 1) {
 		log.Println("next message timestamp 1: ", mex.Timestamp[index], " 2: ", Nodes[pos].Timestamp[index]+1)
 		return true
-	} else if index == int(Nodes[pos].myNode) {
+	} else if index == int(Nodes[pos].MyNode) {
 		//caso deliver stesso nodo
 		return true
 	}
 	return false
 }
 
-func Deliver(nodeId uint) {
+func Deliver(nodeId uint, delay int) {
 	rand.Seed(time.Now().UnixNano())
 	pos := checkPositionNode(nodeId)
 	for {
-		if len(Nodes[pos].DeliverQueue) > 0 && nextMessageTimestamp(&Nodes[pos].DeliverQueue[0], Nodes[pos].NodeId) && HasSameNumberMessage(&Nodes[pos].DeliverQueue[0], Nodes[pos].NodeId) {
+		if len(Nodes[pos].ProcessingMessage) > 0 && nextMessageTimestamp(&Nodes[pos].ProcessingMessage[0], Nodes[pos].NodeId) && HasSameNumberMessage(&Nodes[pos].ProcessingMessage[0], Nodes[pos].NodeId) {
 			message := Nodes[pos].Dequeue()
 			var wg sync.Mutex
 			wg.Lock()
@@ -169,17 +171,20 @@ func Deliver(nodeId uint) {
 				//log.Println("timestamp locale: ", localTimestamp)
 			}
 			Nodes[pos].Timestamp[index] += 1
-			metaData := metadata.New(md)
-			ctx := metadata.NewOutgoingContext(context.Background(), metaData)
+			b, err := json.Marshal(&message)
+			if err != nil {
+				log.Printf("Error marshalling: %s", err)
+				return
+			}
 			go func(wg *sync.Mutex) {
 				defer wg.Unlock()
-				_, LocalErr = Nodes[pos].MyConn.Client.SendPacket(ctx, &message.OPacket)
+				LocalErr = Nodes[pos].MyConn.Send(md, b, nil, delay)
 				if LocalErr != nil {
 					log.Println(LocalErr.Error())
 					Nodes[pos].Timestamp[index] -= 1
 					var wg2 sync.Mutex
 					wg2.Lock()
-					Nodes[pos].AddToQueue(&message, &wg2)
+					Nodes[pos].AddToProcessingQueue(&message, &wg2)
 				}
 			}(&wg)
 

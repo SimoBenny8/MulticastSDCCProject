@@ -14,11 +14,12 @@ import (
 	"time"
 )
 
-func TestOneToMany(t *testing.T) {
+func TestOneToManySQ(t *testing.T) {
 	var localErr error
 	var connections []*client2.Client
 	var wg *sync.WaitGroup
 
+	delay := 1000
 	numNode := 3
 	messages := [][]byte{[]byte("message"), []byte("in"), []byte("order")}
 	connections = make([]*client2.Client, 3)
@@ -61,7 +62,7 @@ func TestOneToMany(t *testing.T) {
 	SQMulticast.SetSequencer(*seq)
 	log.Println("Sequencer is", seq.SeqPort.Connection.Target())
 
-	go SQMulticast.DeliverSeq()
+	go SQMulticast.DeliverSeq(delay)
 	//caso invio al sequencer da un nodo generico
 
 	for i := range messages {
@@ -74,7 +75,7 @@ func TestOneToMany(t *testing.T) {
 				md[util.TYPENODE] = util.SEQUENCER //a chi arriva
 				md[util.MESSAGEID] = SQMulticast.RandSeq(5)
 				go func() {
-					localErr = node.Connections[j].Send(md, messages[i], nil)
+					localErr = node.Connections[j].Send(md, messages[i], nil, delay)
 					if localErr != nil {
 						t.Errorf("SendPacket failed: %v", localErr)
 						return
@@ -102,11 +103,12 @@ func TestOneToMany(t *testing.T) {
 
 }
 
-func TestManyToMany(t *testing.T) {
+func TestManyToManySQ(t *testing.T) {
 	var localErr error
 	var connections []*client2.Client
 	var wg sync.WaitGroup
 
+	delay := 1000
 	numNode := 3
 	messages := [][]byte{[]byte("message"), []byte("in"), []byte("order")}
 	connections = make([]*client2.Client, 3)
@@ -149,7 +151,7 @@ func TestManyToMany(t *testing.T) {
 	SQMulticast.SetSequencer(*seq)
 	log.Println("Sequencer is", seq.SeqPort.Connection.Target())
 
-	go SQMulticast.DeliverSeq()
+	go SQMulticast.DeliverSeq(delay)
 	//caso invio al sequencer da un nodo generico
 
 	for i := range messages {
@@ -162,7 +164,7 @@ func TestManyToMany(t *testing.T) {
 				md[util.TYPENODE] = util.SEQUENCER //a chi arriva
 				md[util.MESSAGEID] = SQMulticast.RandSeq(5)
 				go func() {
-					localErr = node.Connections[j].Send(md, messages[i], nil)
+					localErr = node.Connections[j].Send(md, messages[i], nil, delay)
 					if localErr != nil {
 						t.Errorf("SendPacket failed: %v", localErr)
 						return
@@ -181,7 +183,7 @@ func TestManyToMany(t *testing.T) {
 				md[util.TYPENODE] = util.SEQUENCER //a chi arriva
 				md[util.MESSAGEID] = SQMulticast.RandSeq(5)
 				go func() {
-					localErr = node2.Connections[j].Send(md, messages[i], nil)
+					localErr = node2.Connections[j].Send(md, messages[i], nil, delay)
 					if localErr != nil {
 						t.Errorf("SendPacket failed: %v", localErr)
 						return
@@ -200,7 +202,7 @@ func TestManyToMany(t *testing.T) {
 				md[util.TYPENODE] = util.SEQUENCER //a chi arriva
 				md[util.MESSAGEID] = SQMulticast.RandSeq(5)
 				go func() {
-					localErr = node3.Connections[j].Send(md, messages[i], nil)
+					localErr = node3.Connections[j].Send(md, messages[i], nil, delay)
 					if localErr != nil {
 						t.Errorf("SendPacket failed: %v", localErr)
 						return

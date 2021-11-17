@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+	delay := flag.Uint("delay", 1000, "delay for sending operations (ms)")
 	port := flag.Uint("port", 8090, "server port number")
 	group := flag.String("groupPort", "8090,8091,8092", "defining group port")
 
@@ -75,8 +76,8 @@ func main() {
 	SQMulticast.SetSequencer(*seq)
 	log.Println("Sequencer is", seq.SeqPort.Connection.Target())
 
-	go SQMulticast.DeliverSeq()
-	pool.Pool.InitThreadPool(connections, 5, util.SQMULTICAST, nil, *port)
+	go SQMulticast.DeliverSeq(int(*delay))
+	pool.Pool.InitThreadPool(connections, 5, util.SQMULTICAST, nil, *port, node.NodeId, int(*delay))
 
 	scanner := bufio.NewScanner(os.Stdin)
 	log.Println("Insert message: ")

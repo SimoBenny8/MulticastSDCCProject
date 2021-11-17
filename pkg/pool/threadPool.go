@@ -21,20 +21,20 @@ var (
 	Pool ThreadPool
 )
 
-func (t *ThreadPool) InitThreadPool(connections []*client.Client, numTh int, multicastType string, respChannel chan []byte, port uint, nodeId uint) {
+func (t *ThreadPool) InitThreadPool(connections []*client.Client, numTh int, multicastType string, respChannel chan []byte, port uint, nodeId uint, delay int) {
 	t.Message = make(chan *rpc.Packet, 30)
 
 	Pool.Wg.Lock()
 
 	for i := 0; i < numTh; i++ {
-		go getMessages(Pool.Message, multicastType, connections, respChannel, port, nodeId)
+		go getMessages(Pool.Message, multicastType, connections, respChannel, port, nodeId, delay)
 	}
 
 	Pool.Wg.Unlock()
 
 }
 
-func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*client.Client, respChannel chan []byte, port uint, nodeId uint) {
+func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*client.Client, respChannel chan []byte, port uint, nodeId uint, delay int) {
 	var localErr error
 	seq := SQMulticast.GetSequencer()
 	for {
@@ -48,7 +48,7 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 						md[util.TYPEMC] = util.SQMULTICAST
 						md[util.TYPENODE] = util.SEQUENCER //a chi arriva
 						md[util.MESSAGEID] = SQMulticast.RandSeq(5)
-						localErr = connections[i].Send(md, mex.Message, nil)
+						localErr = connections[i].Send(md, mex.Message, nil, delay)
 					}
 				}
 				if localErr != nil {
@@ -56,16 +56,16 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 				}
 			} else if multicastType == util.SCMULTICAST {
 				message := &MulticastScalarClock.MessageTimestamp{Address: port, OPacket: *mex, Timestamp: MulticastScalarClock.GetTimestamp(nodeId), Id: MulticastScalarClock.RandSeq(5)}
-				MulticastScalarClock.SendMessageToAll(message, nodeId)
+				MulticastScalarClock.SendMessageToAll(message, nodeId, delay)
 
 			} else if multicastType == util.VCMULTICAST {
-				VectorClockMulticast.SendMessageToAll(mex, port, nodeId)
+				VectorClockMulticast.SendMessageToAll(mex, port, nodeId, delay)
 
 			} else if multicastType == util.BMULTICAST {
 				for i := range connections {
 					md := make(map[string]string)
 					md[util.TYPEMC] = util.BMULTICAST
-					localErr = connections[i].Send(md, mex.Message, respChannel)
+					localErr = connections[i].Send(md, mex.Message, respChannel, delay)
 					result := <-respChannel
 					fmt.Println(string(result)) //problema ack implosion
 				}

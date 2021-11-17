@@ -11,14 +11,15 @@ type OtherTimestamp struct {
 }
 
 type NodeSC struct {
-	NodeId            uint
-	Connections       []*client.Client
-	DeliverQueue      OrderedMessages
-	MyConn            *client.Client
-	ProcessingMessage []*rpc.Packet
-	Timestamp         int
-	OtherTs           []OtherTimestamp
-	OrderedAck        []MessageTimestamp
+	NodeId             uint
+	Connections        []*client.Client
+	ProcessingMessages OrderedMessages
+	MyConn             *client.Client
+	ReceivedMessage    []*rpc.Packet
+	Timestamp          int
+	OtherTs            []OtherTimestamp
+	OrderedAck         []MessageTimestamp
+	DeliverQueue       OrderedMessages
 }
 
 var (
@@ -31,7 +32,11 @@ func init() {
 
 }
 
-func AppendDeliverQueue(mex *rpc.Packet, nodeId uint) {
+func GetDeliverNodes() []NodeSC {
+	return Nodes
+}
+
+func AppendDeliverMessages(mex *rpc.Packet, nodeId uint) {
 	m := DecodeMsg(mex)
 	pos := checkPositionNode(nodeId)
 	Nodes[pos].DeliverQueue = append(Nodes[pos].DeliverQueue, *m)

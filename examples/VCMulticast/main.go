@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	//var port uint
+	delay := flag.Uint("delay", 1000, "delay for sending operations (ms)")
 	port := flag.Uint("port", 8090, "server port number")
 	group := flag.String("groupPort", "8090,8091,8092", "defining group port")
 
@@ -73,12 +73,12 @@ func main() {
 	node.Connections = connections
 	node.DeliverQueue = make(VectorClockMulticast.VectorMessages, 0, 100)
 	node.MyConn = myConn
-	node.ProcessingMessages = make(VectorClockMulticast.VectorMessages, 0, 100)
+	node.MyNode = myNode
 
 	VectorClockMulticast.AppendNodes(*node)
 
-	pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, *port, node.NodeId)
-	go VectorClockMulticast.Deliver(node.NodeId)
+	pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, *port, node.NodeId, int(*delay))
+	go VectorClockMulticast.Deliver(node.NodeId, int(*delay))
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Insert message: ")
 	for scanner.Scan() {
