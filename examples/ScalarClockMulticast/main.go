@@ -62,7 +62,7 @@ func main() {
 	node.Connections = connections
 	node.ProcessingMessages = make(MulticastScalarClock.OrderedMessages, 0, 100)
 	node.MyConn = myConn
-	node.ReceivedMessage = make([]*rpc.Packet, 0, 100)
+	node.ReceivedMessage = make(MulticastScalarClock.OrderedMessages, 0, 100)
 	node.Timestamp = 0
 	node.OrderedAck = make(MulticastScalarClock.OrderedMessages, 0, 100)
 	node.OtherTs = make([]MulticastScalarClock.OtherTimestamp, 0, 100)

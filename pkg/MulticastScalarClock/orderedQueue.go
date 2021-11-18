@@ -22,19 +22,15 @@ func (node *NodeSC) OrderingMessage(messages []MessageTimestamp) OrderedMessages
 
 func (node *NodeSC) AddToQueue(m *MessageTimestamp) {
 
-	log.Println("messaggio aggiunto in coda")
+	log.Println("messaggio aggiunto in coda", node.NodeId)
 	node.ProcessingMessages = append(node.ProcessingMessages, *m)
 	node.ProcessingMessages = node.OrderingMessage(node.ProcessingMessages)
 	return
 }
 
 func (node *NodeSC) Dequeue() MessageTimestamp {
-	log.Println("prendo il primo elemento della coda")
+	log.Println("prendo il primo elemento della coda", node.NodeId)
 	m := node.ProcessingMessages[0]
-	if len(node.ProcessingMessages) > 1 {
-		node.ProcessingMessages = node.ProcessingMessages[1:]
-	} else {
-		node.ProcessingMessages = node.ProcessingMessages[:0]
-	}
+	node.ProcessingMessages = removeForProcessingMessages(node.ProcessingMessages, 0)
 	return m
 }

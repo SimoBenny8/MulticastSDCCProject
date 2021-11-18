@@ -2,10 +2,10 @@ package util
 
 const (
 	SEQUENCER        = "sequencernode"
-	SQMULTICAST      = "sqmulticast"
-	SCMULTICAST      = "scmulticast"
-	BMULTICAST       = "bmulticast"
-	VCMULTICAST      = "vcmulticast"
+	SQMULTICAST      = "SQMULTICAST"
+	SCMULTICAST      = "SCMULTICAST"
+	BMULTICAST       = "BMULTICAST"
+	VCMULTICAST      = "VCMULTICAST"
 	TYPEMC           = "typemulticast"
 	MEMBER           = "membernode"
 	TYPENODE         = "typenode"

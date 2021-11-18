@@ -11,13 +11,15 @@ import (
 	"MulticastSDCCProject/pkg/util"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"golang.org/x/net/context"
 	"log"
 	"math/rand"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/net/context"
 )
 
 type MulticastGroup struct {
@@ -165,13 +167,23 @@ func InitGroup(info *ServiceProto.Group, group *MulticastGroup, port uint) {
 
 	log.Println("Waiting for the other nodes")
 	if groupInfo.MulticastType.String() == util.VCMULTICAST {
-		go VectorClockMulticast.Deliver(myConn)
+		nodes := VectorClockMulticast.GetNodes()
+		for i := range nodes {
+			if nodes[i].MyConn == myConn {
+				go VectorClockMulticast.Deliver(nodes[i].NodeId, int(Delay)) //B5,B12,C9
+			}
+		}
 	}
 	if groupInfo.MulticastType.String() == util.SQMULTICAST {
-		go SQMulticast.DeliverSeq()
+		go SQMulticast.DeliverSeq(int(Delay))
 	}
 	if groupInfo.MulticastType.String() == util.SCMULTICAST {
-		go MulticastScalarClock.Deliver(myConn, len(connections))
+		nodes := MulticastScalarClock.GetNodes()
+		for i := range nodes {
+			if nodes[i].MyConn == myConn {
+				go MulticastScalarClock.Deliver(myConn, len(connections), nodes[i].NodeId, int(Delay))
+			}
+		}
 	}
 	// Waiting tha all other nodes are ready
 	update(groupInfo, group)
@@ -188,13 +200,13 @@ func InitGroup(info *ServiceProto.Group, group *MulticastGroup, port uint) {
 //Start communication
 func initGroupCommunication(groupInfo *ServiceProto.Group, port uint, connections []*client.Client, myConn *client.Client) error {
 
-	if groupInfo.MulticastType.String() == "BMULTICAST" {
+	if groupInfo.MulticastType.String() == util.BMULTICAST {
 		log.Println("STARTING BMULTICAST")
 		respChannel := make(chan []byte, 1)
-		pool.Pool.InitThreadPool(connections, 5, util.BMULTICAST, respChannel, port)
+		pool.Pool.InitThreadPool(connections, 5, util.BMULTICAST, respChannel, port, 0, int(Delay))
 
 	}
-	if groupInfo.MulticastType.String() == "SQMULTICAST" {
+	if groupInfo.MulticastType.String() == util.SQMULTICAST {
 		log.Println("STARTING SQMULTICAST")
 		nodeID, _ := strconv.Atoi(groupInfo.MulticastId)
 		n := rand.Intn(len(connections))
@@ -212,25 +224,56 @@ func initGroupCommunication(groupInfo *ServiceProto.Group, port uint, connection
 		seq.LocalTimestamp = 0
 		seq.MessageQueue = make([]SQMulticast.MessageSeq, 0, 100)
 		SQMulticast.SetSequencer(*seq)
-		pool.Pool.InitThreadPool(connections, 5, util.SQMULTICAST, nil, port)
+		pool.Pool.InitThreadPool(connections, 5, util.SQMULTICAST, nil, port, node.NodeId, int(Delay))
 		log.Println("The sequencer nodes is at port", seq.SeqPort.Connection.Target())
 	}
 
-	if groupInfo.MulticastType.String() == "SCMULTICAST" {
+	if groupInfo.MulticastType.String() == util.SCMULTICAST {
 		log.Println("STARTING SCMULTICAST")
-		pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, port)
-		go MulticastScalarClock.Receive(connections, port)
+		node := new(MulticastScalarClock.NodeSC)
+		node.NodeId = uint(rand.Intn(5))
+		node.Connections = connections
+		node.ProcessingMessages = make(MulticastScalarClock.OrderedMessages, 0, 100)
+		node.MyConn = myConn
+		node.ReceivedMessage = make(MulticastScalarClock.OrderedMessages, 0, 100)
+		node.Timestamp = 0
+		node.OrderedAck = make(MulticastScalarClock.OrderedMessages, 0, 100)
+		node.OtherTs = make([]MulticastScalarClock.OtherTimestamp, 0, 100)
+		node.DeliverQueue = make(MulticastScalarClock.OrderedMessages, 0, 100)
+
+		MulticastScalarClock.AppendNodes(*node)
+
+		//nodes := MulticastScalarClock.GetNodes()
+		//trovare j-esimo nodo
+		pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, port, node.NodeId, int(Delay))
+		go MulticastScalarClock.Receive(1, node.NodeId, int(Delay))
 	}
-	if groupInfo.MulticastType.String() == "VCMULTICAST" {
+	if groupInfo.MulticastType.String() == util.VCMULTICAST {
 		log.Println("STARTING VCMULTICAST")
 		var wg sync.Mutex
 		var myNode int32
+		for i := range connections {
+			if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(port))) {
+				myNode = int32(i)
+				log.Println("my index: ", myNode)
+			}
+		}
 
+		node := new(VectorClockMulticast.NodeVC)
 		wg.Lock()
-		VectorClockMulticast.InitLocalTimestamp(&wg, len(connections))
-		VectorClockMulticast.SetMyNode(myNode)
-		VectorClockMulticast.SetConnections(connections)
-		pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, port)
+		node.InitLocalTimestamp(&wg, len(connections))
+		node.NodeId = uint(rand.Intn(5))
+		node.Connections = connections
+		node.DeliverQueue = make(VectorClockMulticast.VectorMessages, 0, 100)
+		node.MyConn = myConn
+		node.MyNode = myNode
+
+		VectorClockMulticast.AppendNodes(*node)
+		//wg.Lock()
+		//VectorClockMulticast.InitLocalTimestamp(&wg, len(connections))
+		//VectorClockMulticast.SetMyNode(myNode)
+		//VectorClockMulticast.SetConnections(connections)
+		pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, port, node.NodeId, int(Delay))
 
 	}
 	return nil

@@ -15,13 +15,17 @@ func init() {
 
 }
 
+func GetNodes() []NodeVC {
+	return Nodes
+}
+
 func checkPositionNode(id uint) int {
 	for i := range Nodes {
 		if Nodes[i].NodeId == id {
 			return i
 		}
 	}
-	return 0
+	return -1
 }
 
 func AppendNodes(node NodeVC) {

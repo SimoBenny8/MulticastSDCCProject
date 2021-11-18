@@ -30,7 +30,7 @@ func TestOneToManySQ(t *testing.T) {
 	n := rand.Intn(len(connections))
 
 	node := new(SQMulticast.NodeForSq)
-	node.NodeId = uint(rand.Intn(5))
+	node.NodeId = uint(rand.Intn(100))
 	node.Connections = connections
 	node.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node.MyConn = connections[0]
@@ -38,7 +38,7 @@ func TestOneToManySQ(t *testing.T) {
 	SQMulticast.AppendNodes(*node)
 
 	node2 := new(SQMulticast.NodeForSq)
-	node2.NodeId = uint(rand.Intn(5))
+	node2.NodeId = uint(rand.Intn(100))
 	node2.Connections = connections
 	node2.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node2.MyConn = connections[1]
@@ -46,7 +46,7 @@ func TestOneToManySQ(t *testing.T) {
 	SQMulticast.AppendNodes(*node2)
 
 	node3 := new(SQMulticast.NodeForSq)
-	node3.NodeId = uint(rand.Intn(5))
+	node3.NodeId = uint(rand.Intn(100))
 	node3.Connections = connections
 	node3.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node3.MyConn = connections[2]
@@ -119,7 +119,7 @@ func TestManyToManySQ(t *testing.T) {
 	n := rand.Intn(len(connections))
 
 	node := new(SQMulticast.NodeForSq)
-	node.NodeId = uint(rand.Intn(5))
+	node.NodeId = uint(rand.Intn(100))
 	node.Connections = connections
 	node.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node.MyConn = connections[0]
@@ -127,7 +127,7 @@ func TestManyToManySQ(t *testing.T) {
 	SQMulticast.AppendNodes(*node)
 
 	node2 := new(SQMulticast.NodeForSq)
-	node2.NodeId = uint(rand.Intn(5))
+	node2.NodeId = uint(rand.Intn(1000))
 	node2.Connections = connections
 	node2.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node2.MyConn = connections[1]
@@ -135,7 +135,7 @@ func TestManyToManySQ(t *testing.T) {
 	SQMulticast.AppendNodes(*node2)
 
 	node3 := new(SQMulticast.NodeForSq)
-	node3.NodeId = uint(rand.Intn(5))
+	node3.NodeId = uint(rand.Intn(1000))
 	node3.Connections = connections
 	node3.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node3.MyConn = connections[2]
