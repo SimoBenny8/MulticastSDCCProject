@@ -1,25 +1,24 @@
 package restApi
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/SQMulticast"
-	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
 	client1 "github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/proto"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/VectorClockMulticast"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
+	"github.com/gin-gonic/gin"
 	"log"
 	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"golang.org/x/net/context"
 )
 
 type MulticastGroup struct {
@@ -67,7 +66,7 @@ type GroupConfig struct {
 }
 
 var (
-	RegClient       ServiceProto.RegistryClient
+	RegClient       proto.RegistryClient
 	GMu             sync.RWMutex
 	Delay           uint
 	MulticastGroups map[string]*MulticastGroup
@@ -113,14 +112,14 @@ func (r routes) addGroups(rg *gin.RouterGroup) {
 	groups.GET("/messages/:mId", getMessages)
 }
 
-func InitGroup(info *ServiceProto.Group, group *MulticastGroup, port uint) {
+func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 
 	var myConn *client.Client
 
 	log.Println("Waiting for the group to be ready")
 
 	update(info, group)
-	groupInfo, err := ChangeStatus(info, group, ServiceProto.Status_OPENING)
+	groupInfo, err := ChangeStatus(info, group, proto.Status_OPENING)
 	if err != nil {
 		return
 	}
@@ -157,7 +156,7 @@ func InitGroup(info *ServiceProto.Group, group *MulticastGroup, port uint) {
 		return
 	}
 
-	groupInfo, err = RegClient.Ready(context.Background(), &ServiceProto.RequestData{
+	groupInfo, err = RegClient.Ready(context.Background(), &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
 		ClientId:    group.clientId,
 	})
@@ -187,7 +186,7 @@ func InitGroup(info *ServiceProto.Group, group *MulticastGroup, port uint) {
 	}
 	// Waiting tha all other nodes are ready
 	update(groupInfo, group)
-	groupInfo, _ = ChangeStatus(groupInfo, group, ServiceProto.Status_STARTING)
+	groupInfo, _ = ChangeStatus(groupInfo, group, proto.Status_STARTING)
 
 	if err != nil {
 		return
@@ -198,7 +197,7 @@ func InitGroup(info *ServiceProto.Group, group *MulticastGroup, port uint) {
 }
 
 //Start communication
-func initGroupCommunication(groupInfo *ServiceProto.Group, port uint, connections []*client.Client, myConn *client.Client) error {
+func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*client.Client, myConn *client.Client) error {
 
 	if groupInfo.MulticastType.String() == util.BMULTICAST {
 		log.Println("STARTING BMULTICAST")
@@ -276,19 +275,19 @@ func initGroupCommunication(groupInfo *ServiceProto.Group, port uint, connection
 }
 
 //Change status of the member
-func ChangeStatus(groupInfo *ServiceProto.Group, multicastGroup *MulticastGroup, status ServiceProto.Status) (*ServiceProto.Group, error) {
+func ChangeStatus(groupInfo *proto.Group, multicastGroup *MulticastGroup, status proto.Status) (*proto.Group, error) {
 	var err error
 
 	for groupInfo.Status == status {
 		time.Sleep(time.Second * 5)
-		groupInfo, err = RegClient.GetStatus(context.Background(), &ServiceProto.MulticastId{MulticastId: groupInfo.MulticastId})
+		groupInfo, err = RegClient.GetStatus(context.Background(), &proto.MulticastId{MulticastId: groupInfo.MulticastId})
 		if err != nil {
 			return nil, err
 		}
 		update(groupInfo, multicastGroup)
 	}
 
-	if groupInfo.Status == ServiceProto.Status_CLOSED || groupInfo.Status == ServiceProto.Status_CLOSING {
+	if groupInfo.Status == proto.Status_CLOSED || groupInfo.Status == proto.Status_CLOSING {
 		return nil, errors.New("multicast group is closed")
 	}
 
@@ -296,11 +295,11 @@ func ChangeStatus(groupInfo *ServiceProto.Group, multicastGroup *MulticastGroup,
 }
 
 //update status of member
-func update(groupInfo *ServiceProto.Group, multicastGroup *MulticastGroup) {
+func update(groupInfo *proto.Group, multicastGroup *MulticastGroup) {
 	multicastGroup.groupMu.Lock()
 	defer multicastGroup.groupMu.Unlock()
 
-	multicastGroup.Group.Status = ServiceProto.Status_name[int32(groupInfo.Status)]
+	multicastGroup.Group.Status = proto.Status_name[int32(groupInfo.Status)]
 
 	for clientId, member := range groupInfo.Members {
 		m, ok := multicastGroup.Group.Members[clientId]

@@ -3,7 +3,7 @@ package restApi
 import (
 	"context"
 	"errors"
-	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/proto"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 	"github.com/gin-gonic/gin"
@@ -53,20 +53,20 @@ func addGroup(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err})
 	}
 
-	multicastType, ok := ServiceProto.TypeMulticast_value[req.MulticastType]
+	multicastType, ok := proto.TypeMulticast_value[req.MulticastType]
 	if !ok {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "multicast type not supported"})
 	}
-	log.Println("Creating multicast with type ", ServiceProto.TypeMulticast(multicastType))
+	log.Println("Creating multicast with type ", proto.TypeMulticast(multicastType))
 
 	GMu.Lock()
 	defer GMu.Unlock()
 
 	group, _ := MulticastGroups[multicastId]
 
-	registrationAns, err := RegClient.Register(context.Background(), &ServiceProto.RegInfo{
+	registrationAns, err := RegClient.Register(context.Background(), &proto.RegInfo{
 		MulticastId:   multicastId,
-		MulticastType: ServiceProto.TypeMulticast(multicastType),
+		MulticastType: proto.TypeMulticast(multicastType),
 		Port:          uint32(GrpcPort),
 	})
 
@@ -88,9 +88,9 @@ func addGroup(c *gin.Context) {
 		clientId: registrationAns.ClientId,
 		Group: &MulticastInfo{
 			MulticastId:      registrationAns.GroupInfo.MulticastId,
-			MulticastType:    ServiceProto.TypeMulticast(multicastType).String(),
+			MulticastType:    proto.TypeMulticast(multicastType).String(),
 			ReceivedMessages: 0,
-			Status:           ServiceProto.Status_name[int32(registrationAns.GroupInfo.Status)],
+			Status:           proto.Status_name[int32(registrationAns.GroupInfo.Status)],
 			Members:          members,
 		},
 		Messages: make([]Message, 0),
@@ -122,7 +122,7 @@ func sendMessage(c *gin.Context) {
 	group.groupMu.RLock()
 	defer group.groupMu.RUnlock()
 
-	if ServiceProto.Status(ServiceProto.Status_value[group.Group.Status]) != ServiceProto.Status_ACTIVE {
+	if proto.Status(proto.Status_value[group.Group.Status]) != proto.Status_ACTIVE {
 		c.IndentedJSON(http.StatusTooEarly, gin.H{"error": "group not ready"})
 		return
 	}
@@ -150,7 +150,7 @@ func closeGroup(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group not found"})
 	}
 
-	_, err := ServiceProto.RegistryClient.CloseGroup(context.Background(), &ServiceProto.RequestData{
+	_, err := proto.RegistryClient.CloseGroup(context.Background(), &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
 		ClientId:    mId,
 	}, nil)
@@ -174,7 +174,7 @@ func startGroup(c *gin.Context) {
 		c.IndentedJSON(statusCode, gin.H{"error": errors.New("groups doesn't exist")})
 	}
 
-	info, err := RegClient.StartGroup(context.Background(), &ServiceProto.RequestData{
+	info, err := RegClient.StartGroup(context.Background(), &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
 		ClientId:    group.clientId})
 

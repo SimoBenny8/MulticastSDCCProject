@@ -1,12 +1,12 @@
 package client
 
 import (
-	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/proto"
 	"google.golang.org/grpc"
 	"log"
 )
 
-func Connect(address string) (ServiceProto.RegistryClient, error) {
+func Connect(address string) (proto.RegistryClient, error) {
 
 	log.Println("Connecting to registry: ", address)
 
@@ -17,5 +17,5 @@ func Connect(address string) (ServiceProto.RegistryClient, error) {
 	} else {
 		log.Println("Correctly connected to registry at address: ", address)
 	}
-	return ServiceProto.NewRegistryClient(conn), nil
+	return proto.NewRegistryClient(conn), nil
 }

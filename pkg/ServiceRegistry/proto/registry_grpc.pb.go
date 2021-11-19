@@ -4,7 +4,7 @@
 // - protoc             v3.17.3
 // source: registry.proto
 
-package ServiceProto
+package proto
 
 import (
 	context "context"
@@ -39,7 +39,7 @@ func NewRegistryClient(cc grpc.ClientConnInterface) RegistryClient {
 
 func (c *registryClient) Register(ctx context.Context, in *RegInfo, opts ...grpc.CallOption) (*RegAnswer, error) {
 	out := new(RegAnswer)
-	err := c.cc.Invoke(ctx, "/serviceregistry.Registry/register", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ServiceRegistry.Registry/register", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c *registryClient) Register(ctx context.Context, in *RegInfo, opts ...grpc
 
 func (c *registryClient) StartGroup(ctx context.Context, in *RequestData, opts ...grpc.CallOption) (*Group, error) {
 	out := new(Group)
-	err := c.cc.Invoke(ctx, "/serviceregistry.Registry/startGroup", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ServiceRegistry.Registry/startGroup", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *registryClient) StartGroup(ctx context.Context, in *RequestData, opts .
 
 func (c *registryClient) Ready(ctx context.Context, in *RequestData, opts ...grpc.CallOption) (*Group, error) {
 	out := new(Group)
-	err := c.cc.Invoke(ctx, "/serviceregistry.Registry/ready", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ServiceRegistry.Registry/ready", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (c *registryClient) Ready(ctx context.Context, in *RequestData, opts ...grp
 
 func (c *registryClient) CloseGroup(ctx context.Context, in *RequestData, opts ...grpc.CallOption) (*Group, error) {
 	out := new(Group)
-	err := c.cc.Invoke(ctx, "/serviceregistry.Registry/closeGroup", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ServiceRegistry.Registry/closeGroup", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (c *registryClient) CloseGroup(ctx context.Context, in *RequestData, opts .
 
 func (c *registryClient) GetStatus(ctx context.Context, in *MulticastId, opts ...grpc.CallOption) (*Group, error) {
 	out := new(Group)
-	err := c.cc.Invoke(ctx, "/serviceregistry.Registry/getStatus", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ServiceRegistry.Registry/getStatus", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func _Registry_Register_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/serviceregistry.Registry/register",
+		FullMethod: "/ServiceRegistry.Registry/register",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RegistryServer).Register(ctx, req.(*RegInfo))
@@ -154,7 +154,7 @@ func _Registry_StartGroup_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/serviceregistry.Registry/startGroup",
+		FullMethod: "/ServiceRegistry.Registry/startGroup",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RegistryServer).StartGroup(ctx, req.(*RequestData))
@@ -172,7 +172,7 @@ func _Registry_Ready_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/serviceregistry.Registry/ready",
+		FullMethod: "/ServiceRegistry.Registry/ready",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RegistryServer).Ready(ctx, req.(*RequestData))
@@ -190,7 +190,7 @@ func _Registry_CloseGroup_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/serviceregistry.Registry/closeGroup",
+		FullMethod: "/ServiceRegistry.Registry/closeGroup",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RegistryServer).CloseGroup(ctx, req.(*RequestData))
@@ -208,7 +208,7 @@ func _Registry_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/serviceregistry.Registry/getStatus",
+		FullMethod: "/ServiceRegistry.Registry/getStatus",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RegistryServer).GetStatus(ctx, req.(*MulticastId))
@@ -220,7 +220,7 @@ func _Registry_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Registry_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "serviceregistry.Registry",
+	ServiceName: "ServiceRegistry.Registry",
 	HandlerType: (*RegistryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
