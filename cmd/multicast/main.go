@@ -23,17 +23,17 @@ func main() {
 	verb := flag.Bool("verbose", util.GetEnvBoolWithDefault("VERBOSE", true), "Turn verbose mode on or off.")
 	registryAddr := flag.String("registryAddr", "registry:90", "service registry address")
 	r := flag.Bool("registry", util.GetEnvBoolWithDefault("REGISTRY", true), "start multicast registry")
-	application := flag.Bool("application", util.GetEnvBoolWithDefault("APP", true), "start multicast application")
+	//application := flag.Bool("application", util.GetEnvBoolWithDefault("APP", true), "start multicast application")
 	//myId := flag.Int("id", util.GetEnvIntWithDefault("ID", 0), "number id of member")
 
 	//utils.Myid = *myId
 	flag.Parse()
 	services := make([]func(registrar grpc.ServiceRegistrar) error, 0)
 
-	if *application {
-		log.Println("Adding basic communication service to gRPC server")
-		services = append(services, server.Register)
-	}
+	//if *application {
+	log.Println("Adding basic communication service to gRPC server")
+	services = append(services, server.Register)
+	//}
 	if *r {
 		log.Println("Adding multicast registry service to gRPC server")
 		services = append(services, server2.Registration)
@@ -65,19 +65,19 @@ func main() {
 	}()
 	wg.Wait()
 
-	if *application {
+	//if *application {
 
-		wg.Add(1)
-		go func() {
-			err := restApi.Run(*grpcPort, *restPort, *registryAddr, *restPath, int(*numThreads), *delay, *verb)
-			if err != nil {
-				log.Println("Error in running applicatioon", err.Error())
-				return
-			}
-			wg.Done()
-		}()
-		wg.Wait()
-	}
+	wg.Add(1)
+	go func() {
+		err := restApi.Run(*grpcPort, *restPort, *registryAddr, *restPath, int(*numThreads), *delay, *verb)
+		if err != nil {
+			log.Println("Error in running application", err.Error())
+			return
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	//}
 
 	log.Println("App started")
 
