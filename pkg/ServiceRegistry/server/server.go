@@ -143,7 +143,9 @@ func (s *RegistryServer) Ready(ctx context.Context, in *proto.RequestData) (*pro
 // CloseGroup closes the group.
 func (s *RegistryServer) CloseGroup(ctx context.Context, in *proto.RequestData) (*proto.Group, error) {
 
-	_, ok := peer.FromContext(ctx)
+	source, ok := peer.FromContext(ctx)
+	src := source.Addr.String()
+	log.Println("src address closing group", src)
 
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "Missing source address")
