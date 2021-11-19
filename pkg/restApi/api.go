@@ -151,10 +151,10 @@ func closeGroup(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group not found"})
 	}
 
-	_, err := proto.RegistryClient.CloseGroup(context_, &proto.RequestData{
+	_, err := RegClient.CloseGroup(context_, &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
 		ClientId:    mId,
-	}, nil)
+	})
 	if err != nil {
 		log.Println("Error in closing group")
 	}
