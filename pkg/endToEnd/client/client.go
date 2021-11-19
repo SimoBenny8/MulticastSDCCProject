@@ -34,11 +34,11 @@ func Connect(address string) *Client {
 }
 
 //method to send message
-func (c *Client) Send(messageMetadata map[string]string, payload []byte, respChannel chan []byte) error { //TODO: aggiungere delay
+func (c *Client) Send(messageMetadata map[string]string, payload []byte, respChannel chan []byte, delayParam int) error {
 	var wg sync.Mutex
 	log.Println("Sender: ", c.Connection.Target())
 	wg.Lock()
-	delay(&wg, 5000)
+	delay(&wg, delayParam) //5000 milliseconds
 	md := metadata.New(messageMetadata)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	_, err := c.Client.SendPacket(ctx, &rpc.Packet{Message: payload})

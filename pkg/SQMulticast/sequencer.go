@@ -4,8 +4,6 @@ import (
 	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/rpc"
 	"MulticastSDCCProject/pkg/util"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc/metadata"
 	"log"
 	"math/rand"
 	"sync"
@@ -67,7 +65,7 @@ func (s *Sequencer) addMessageSeq(wg *sync.Mutex, mex *MessageSeq) {
 	s.MessageQueue = append(s.MessageQueue, *mex)
 }
 
-func DeliverSeq() {
+func DeliverSeq(delay int) {
 	rand.Seed(time.Now().UnixNano())
 	var wg sync.WaitGroup
 	for {
@@ -87,9 +85,7 @@ func DeliverSeq() {
 					md[util.TYPENODE] = util.MEMBER //a chi arriva
 					md[util.MESSAGEID] = message.Id
 					md[util.RECEIVER] = seq.Connections[i].Connection.Target()
-					metaData := metadata.New(md)
-					ctx := metadata.NewOutgoingContext(context.Background(), metaData)
-					_, seq.LocalErr = seq.Connections[i].Client.SendPacket(ctx, message.Message)
+					seq.LocalErr = seq.Connections[i].Send(md, message.Message.Message, nil, delay)
 					if seq.LocalErr != nil {
 						log.Println(seq.LocalErr.Error())
 					}

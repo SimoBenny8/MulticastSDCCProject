@@ -20,6 +20,7 @@ import (
 
 func main() {
 	//var port uint
+	delay := flag.Uint("delay", 1000, "delay for sending operations (ms)")
 	port := flag.Uint("port", 8090, "server port number")
 	group := flag.String("groupPort", "8090,8091,8092", "defining group port")
 
@@ -59,18 +60,19 @@ func main() {
 	node := new(MulticastScalarClock.NodeSC)
 	node.NodeId = uint(rand.Intn(5))
 	node.Connections = connections
-	node.DeliverQueue = make(MulticastScalarClock.OrderedMessages, 0, 100)
+	node.ProcessingMessages = make(MulticastScalarClock.OrderedMessages, 0, 100)
 	node.MyConn = myConn
-	node.ProcessingMessage = make([]*rpc.Packet, 0, 100)
+	node.ReceivedMessage = make(MulticastScalarClock.OrderedMessages, 0, 100)
 	node.Timestamp = 0
 	node.OrderedAck = make(MulticastScalarClock.OrderedMessages, 0, 100)
 	node.OtherTs = make([]MulticastScalarClock.OtherTimestamp, 0, 100)
+	node.DeliverQueue = make(MulticastScalarClock.OrderedMessages, 0, 100)
 
 	MulticastScalarClock.AppendNodes(*node)
 
-	pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, *port, node.NodeId)
-	go MulticastScalarClock.Receive(*port, node.NodeId)
-	go MulticastScalarClock.Deliver(myConn, len(connections), node.NodeId)
+	pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, *port, node.NodeId, int(*delay))
+	go MulticastScalarClock.Receive(*port, node.NodeId, int(*delay))
+	go MulticastScalarClock.Deliver(myConn, len(connections), node.NodeId, int(*delay))
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Insert message: ")

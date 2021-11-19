@@ -14,7 +14,7 @@ func (a OrderedMessages) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 //func che ordina i messaggi in coda
 func (node *NodeSC) OrderingMessage(messages []MessageTimestamp) OrderedMessages {
 	log.Println("riordino i messaggi")
-	sort.Sort(node.DeliverQueue)
+	sort.Sort(node.ProcessingMessages)
 	return messages
 }
 
@@ -22,19 +22,15 @@ func (node *NodeSC) OrderingMessage(messages []MessageTimestamp) OrderedMessages
 
 func (node *NodeSC) AddToQueue(m *MessageTimestamp) {
 
-	log.Println("messaggio aggiunto in coda")
-	node.DeliverQueue = append(node.DeliverQueue, *m)
-	node.DeliverQueue = node.OrderingMessage(node.DeliverQueue)
+	log.Println("messaggio aggiunto in coda", node.NodeId)
+	node.ProcessingMessages = append(node.ProcessingMessages, *m)
+	node.ProcessingMessages = node.OrderingMessage(node.ProcessingMessages)
 	return
 }
 
 func (node *NodeSC) Dequeue() MessageTimestamp {
-	log.Println("prendo il primo elemento della coda")
-	m := node.DeliverQueue[0]
-	if len(node.DeliverQueue) > 1 {
-		node.DeliverQueue = node.DeliverQueue[1:]
-	} else {
-		node.DeliverQueue = node.DeliverQueue[:0]
-	}
+	log.Println("prendo il primo elemento della coda", node.NodeId)
+	m := node.ProcessingMessages[0]
+	node.ProcessingMessages = removeForProcessingMessages(node.ProcessingMessages, 0)
 	return m
 }

@@ -11,14 +11,15 @@ type OtherTimestamp struct {
 }
 
 type NodeSC struct {
-	NodeId            uint
-	Connections       []*client.Client
-	DeliverQueue      OrderedMessages
-	MyConn            *client.Client
-	ProcessingMessage []*rpc.Packet
-	Timestamp         int
-	OtherTs           []OtherTimestamp
-	OrderedAck        []MessageTimestamp
+	NodeId             uint
+	Connections        []*client.Client
+	ProcessingMessages OrderedMessages
+	MyConn             *client.Client
+	ReceivedMessage    OrderedMessages
+	Timestamp          int
+	OtherTs            []OtherTimestamp
+	OrderedAck         []MessageTimestamp
+	DeliverQueue       OrderedMessages
 }
 
 var (
@@ -31,7 +32,11 @@ func init() {
 
 }
 
-func AppendDeliverQueue(mex *rpc.Packet, nodeId uint) {
+func GetNodes() []NodeSC {
+	return Nodes
+}
+
+func AppendDeliverMessages(mex *rpc.Packet, nodeId uint) {
 	m := DecodeMsg(mex)
 	pos := checkPositionNode(nodeId)
 	Nodes[pos].DeliverQueue = append(Nodes[pos].DeliverQueue, *m)
@@ -54,7 +59,15 @@ func checkPositionNode(id uint) int {
 			return i
 		}
 	}
-	return 0
+	return -1
+}
+
+func removeForReceivedMessage(slice OrderedMessages, s int) OrderedMessages {
+	return append(slice[:s], slice[s+1:]...)
+}
+
+func removeForProcessingMessages(slice OrderedMessages, s int) OrderedMessages {
+	return append(slice[:s], slice[s+1:]...)
 }
 
 func removeForMessageTimestamp(slice []MessageTimestamp, s int) []MessageTimestamp {
@@ -69,11 +82,11 @@ func EmptyOtherTimestamp(idMex string, nodeId uint) {
 	pos := checkPositionNode(nodeId)
 	for i := range Nodes[pos].OtherTs {
 		if Nodes[pos].OtherTs[i].id == idMex {
-			removeForOtherTimestamps(Nodes[pos].OtherTs, i)
+			Nodes[pos].OtherTs = removeForOtherTimestamps(Nodes[pos].OtherTs, i)
+			break
+
 		}
 	}
-
-	return
 
 }
 
@@ -86,7 +99,8 @@ func EmptyOrderedAck(idMex string, nodeId uint) { //svuota l'array
 	pos := checkPositionNode(nodeId)
 	for i := range Nodes[pos].OrderedAck {
 		if Nodes[pos].OrderedAck[i].Id == idMex {
-			removeForMessageTimestamp(Nodes[pos].OrderedAck, i)
+			Nodes[pos].OrderedAck = removeForMessageTimestamp(Nodes[pos].OrderedAck, i)
+			break
 		}
 	}
 	return

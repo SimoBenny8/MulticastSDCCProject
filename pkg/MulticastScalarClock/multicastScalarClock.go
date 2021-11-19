@@ -5,10 +5,8 @@ import (
 	"MulticastSDCCProject/pkg/rpc"
 	"MulticastSDCCProject/pkg/util"
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"log"
 	"math"
 	"math/rand"
@@ -32,7 +30,8 @@ var (
 
 func AddingReceivingMex(mex *rpc.Packet, nodeId uint) {
 	pos := checkPositionNode(nodeId)
-	Nodes[pos].ProcessingMessage = append(Nodes[pos].ProcessingMessage, mex)
+	m := DecodeMsg(mex)
+	Nodes[pos].ReceivedMessage = append(Nodes[pos].ReceivedMessage, *m)
 }
 
 func GetTimestamp(nodeId uint) int {
@@ -48,7 +47,7 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func SendMessageToAll(message *MessageTimestamp, nodeId uint) {
+func SendMessageToAll(message *MessageTimestamp, nodeId uint, delay int) {
 
 	pos := checkPositionNode(nodeId)
 	var wg sync.WaitGroup
@@ -71,8 +70,9 @@ func SendMessageToAll(message *MessageTimestamp, nodeId uint) {
 	for i := range Nodes[pos].Connections {
 		wg.Add(1)
 		ind := i
+		md[util.RECEIVER] = Nodes[pos].Connections[ind].Connection.Target()
 		go func() {
-			err = Nodes[pos].Connections[ind].Send(md, b, nil)
+			err = Nodes[pos].Connections[ind].Send(md, b, nil, delay)
 			//result := <-respChannel
 			//log.Println("ack: ", string(result))
 			if err != nil {
@@ -111,59 +111,71 @@ func HasMinimumTimestamp(message *MessageTimestamp, nodeId uint) bool {
 			count += 1
 		}
 	}
-	log.Println("count:", count)
-	if count == len(Nodes) {
-		EmptyOtherTimestamp(message.Id, nodeId)
+	//log.Println("count:", count)
+	if count == len(Nodes[pos].Connections) {
+		log.Println("count:", count)
 		return true
 	}
 	return false
 }
 
-func Deliver(myConn *client.Client, numConn int, nodeId uint) {
+func Deliver(myConn *client.Client, numConn int, nodeId uint, delay int) {
 	rand.Seed(time.Now().UnixNano())
 	pos := checkPositionNode(nodeId)
 	for {
-		if len(Nodes[pos].DeliverQueue) > 0 && IsCorrectNumberAck(&Nodes[pos].DeliverQueue[0], numConn, nodeId) && HasMinimumTimestamp(&Nodes[pos].DeliverQueue[0], nodeId) {
-			var wg sync.Mutex
-			wg.Lock()
+		if len(Nodes[pos].ProcessingMessages) > 0 && IsCorrectNumberAck(&Nodes[pos].ProcessingMessages[0], numConn, nodeId) && HasMinimumTimestamp(&Nodes[pos].ProcessingMessages[0], nodeId) {
 			message := Nodes[pos].Dequeue()
-			var LocalErr error
-			md := make(map[string]string)
-			md[util.TYPEMC] = util.SCMULTICAST
-			md[util.ACK] = util.FALSE
-			md[util.TIMESTAMPMESSAGE] = util.EMPTY
-			md[util.DELIVER] = util.TRUE
-			md[util.NODEID] = strconv.Itoa(int(nodeId))
-			metaData := metadata.New(md)
-			ctx := metadata.NewOutgoingContext(context.Background(), metaData)
-			go func(wg *sync.Mutex) {
-				defer wg.Unlock()
-				_, LocalErr = myConn.Client.SendPacket(ctx, &message.OPacket)
-				if LocalErr != nil {
-					log.Println(LocalErr.Error())
-				}
+			EmptyOrderedAck(message.Id, nodeId)
+			EmptyOtherTimestamp(message.Id, nodeId)
+			Nodes[pos].DeliverQueue = append(Nodes[pos].DeliverQueue, message)
 
-			}(&wg)
+			/*	var wg sync.Mutex
+				wg.Lock()
+				message := Nodes[pos].Dequeue()
+				EmptyOrderedAck(message.Id, nodeId)
+				EmptyOtherTimestamp(message.Id, nodeId)
+				var LocalErr error
+				md := make(map[string]string)
+				md[util.TYPEMC] = util.SCMULTICAST
+				md[util.ACK] = util.FALSE
+				md[util.TIMESTAMPMESSAGE] = util.EMPTY
+				md[util.DELIVER] = util.TRUE
+				md[util.NODEID] = strconv.Itoa(int(nodeId))
+				md[util.RECEIVER] = Nodes[pos].MyConn.Connection.Target()
+				b, err := json.Marshal(&message)
+				if err != nil {
+					log.Printf("Error marshalling: %s", err)
+					return
+				}
+				go func(wg *sync.Mutex) {
+					defer wg.Unlock()
+					LocalErr = Nodes[pos].MyConn.Send(md, b, nil, delay)
+					if LocalErr != nil {
+						log.Println(LocalErr.Error())
+					}
+
+				}(&wg)*/
 
 		}
 	}
 
 }
 
-func Receive(addr uint, nodeId uint) {
+func Receive(addr uint, nodeId uint, delay int) {
 	var tInQueue int
 	pos := checkPositionNode(nodeId)
+	//log.Println("Ecco la posizione:",pos)
 	for {
-		if len(Nodes[pos].ProcessingMessage) > 0 {
+		if len(Nodes[pos].ReceivedMessage) > 0 {
 			var wg sync.WaitGroup
-			mt := DecodeMsg(Nodes[pos].ProcessingMessage[0])
+			mt := Nodes[pos].ReceivedMessage[0]
 			Nodes[pos].Timestamp = int(math.Max(float64(mt.Timestamp), float64(Nodes[pos].Timestamp)))
 			Nodes[pos].Timestamp += 1
 			log.Println("Original Message: ", string(mt.OPacket.Message), "Timestamp: ", mt.Timestamp)
 
-			Nodes[pos].AddToQueue(mt)
-			if len(Nodes[pos].DeliverQueue) > 0 {
-				tInQueue = Nodes[pos].DeliverQueue[0].Timestamp
+			Nodes[pos].AddToQueue(&mt)
+			if len(Nodes[pos].ProcessingMessages) > 0 {
+				tInQueue = Nodes[pos].ProcessingMessages[0].Timestamp
 			} else {
 				tInQueue = -1
 			}
@@ -176,7 +188,7 @@ func Receive(addr uint, nodeId uint) {
 				fmt.Printf("Error marshalling: %s", err)
 				return
 			}
-
+			Nodes[pos].ReceivedMessage = removeForReceivedMessage(Nodes[pos].ReceivedMessage, 0)
 			md := make(map[string]string)
 			md[util.TYPEMC] = util.SCMULTICAST
 			md[util.ACK] = util.TRUE
@@ -185,23 +197,17 @@ func Receive(addr uint, nodeId uint) {
 			for i := range Nodes[pos].Connections {
 				wg.Add(1)
 				ind := i
+				md[util.RECEIVER] = Nodes[pos].Connections[ind].Connection.Target()
 				go func() {
 					defer wg.Done()
-
-					err = Nodes[pos].Connections[ind].Send(md, b, nil)
+					err = Nodes[pos].Connections[ind].Send(md, b, nil, delay)
 					if err != nil {
 						log.Fatal("error during ack message")
 					}
 				}()
 			}
-			if len(Nodes[pos].ProcessingMessage) > 1 {
-				Nodes[pos].ProcessingMessage = Nodes[pos].ProcessingMessage[1:]
-			} else {
-				Nodes[pos].ProcessingMessage = Nodes[pos].ProcessingMessage[:0]
-			}
 			wg.Wait()
-		} else {
-			continue
+
 		}
 	}
 }
@@ -213,17 +219,13 @@ func IsCorrectNumberAck(message *MessageTimestamp, numCon int, nodeId uint) bool
 		if Nodes[pos].OrderedAck[r].Id == message.Id {
 			i += 1
 		}
-		log.Println("numero ack: ", i)
 	}
 
 	if i == numCon {
 		log.Println("raggiunto numero di ack corretto")
-		EmptyOrderedAck(message.Id, nodeId)
-		//	wg.Unlock()
 		return true
 
 	}
-	//wg.Unlock()
 	return false
 }
 
