@@ -1,4 +1,4 @@
-module MulticastSDCCProject
+module github.com/SimoBenny8/MulticastSDCCProject
 
 go 1.17
 
