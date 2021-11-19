@@ -8,7 +8,7 @@ import (
 )
 
 func TestAddGroup(t *testing.T) {
-	resp, err := http.Get("http://localhost:80/multicast/v1/groups")
+	resp, err := http.Get("http://localhost:80/multicast/v1/groups/id")
 	if err != nil {
 		log.Fatalln(err)
 	} else {
