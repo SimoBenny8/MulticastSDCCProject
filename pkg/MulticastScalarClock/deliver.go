@@ -1,8 +1,8 @@
 package MulticastScalarClock
 
 import (
-	"MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 )
 
 type OtherTimestamp struct {

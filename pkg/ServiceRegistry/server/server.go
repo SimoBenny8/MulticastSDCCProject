@@ -1,9 +1,9 @@
 package server
 
 import (
-	"MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
 	"context"
 	"fmt"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/ServiceProto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"

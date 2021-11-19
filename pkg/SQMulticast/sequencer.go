@@ -1,9 +1,9 @@
 package SQMulticast
 
 import (
-	"MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/util"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"log"
 	"math/rand"
 	"sync"

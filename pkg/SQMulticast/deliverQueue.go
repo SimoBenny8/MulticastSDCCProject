@@ -1,7 +1,7 @@
 package SQMulticast
 
 import (
-	"MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
 	"sort"
 )
 

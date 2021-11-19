@@ -1,13 +1,13 @@
 package pool
 
 import (
-	"MulticastSDCCProject/pkg/MulticastScalarClock"
-	"MulticastSDCCProject/pkg/SQMulticast"
-	"MulticastSDCCProject/pkg/VectorClockMulticast"
-	"MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/util"
 	"fmt"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/SQMulticast"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/VectorClockMulticast"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"log"
 	"sync"
 )
@@ -48,7 +48,7 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 						md[util.TYPEMC] = util.SQMULTICAST
 						md[util.TYPENODE] = util.SEQUENCER //a chi arriva
 						md[util.MESSAGEID] = SQMulticast.RandSeq(5)
-						localErr = connections[i].Send(md, mex.Message, nil, delay)
+						localErr = connections[i].Send(md, []byte(""), mex.Message, nil, delay)
 					}
 				}
 				if localErr != nil {
@@ -65,7 +65,7 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 				for i := range connections {
 					md := make(map[string]string)
 					md[util.TYPEMC] = util.BMULTICAST
-					localErr = connections[i].Send(md, mex.Message, respChannel, delay)
+					localErr = connections[i].Send(md, []byte(""), mex.Message, respChannel, delay)
 					result := <-respChannel
 					fmt.Println(string(result)) //problema ack implosion
 				}

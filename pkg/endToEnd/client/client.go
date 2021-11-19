@@ -1,8 +1,8 @@
 package client
 
 import (
-	"MulticastSDCCProject/pkg/rpc"
 	"context"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"log"

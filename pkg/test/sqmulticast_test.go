@@ -1,10 +1,10 @@
 package test
 
 import (
-	"MulticastSDCCProject/pkg/SQMulticast"
-	client2 "MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/testUtil"
-	"MulticastSDCCProject/pkg/util"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/SQMulticast"
+	client2 "github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/testUtil"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"math/rand"

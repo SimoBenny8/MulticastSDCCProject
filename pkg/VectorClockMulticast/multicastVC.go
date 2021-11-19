@@ -1,10 +1,10 @@
 package VectorClockMulticast
 
 import (
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/util"
 	"bytes"
 	"encoding/json"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"log"
 	"math"
 	"math/rand"
@@ -40,9 +40,9 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int, pos int) {
+func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 
-	//pos := checkPositionNode(nodeId)
+	pos := checkPositionNode(nodeId)
 	var wg sync.WaitGroup
 	Nodes[pos].Timestamp[Nodes[pos].MyNode] += 1
 

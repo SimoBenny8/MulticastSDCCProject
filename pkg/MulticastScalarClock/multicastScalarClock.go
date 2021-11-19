@@ -1,11 +1,11 @@
 package MulticastScalarClock
 
 import (
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/util"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"log"
 	"math"
 	"math/rand"

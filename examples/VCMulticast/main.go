@@ -1,15 +1,15 @@
 package main
 
 import (
-	"MulticastSDCCProject/pkg/VectorClockMulticast"
-	"MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/endToEnd/server"
-	"MulticastSDCCProject/pkg/pool"
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/util"
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/VectorClockMulticast"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/server"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"log"
 	"math/rand"
 	"os"

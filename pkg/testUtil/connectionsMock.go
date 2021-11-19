@@ -1,10 +1,10 @@
 package testUtil
 
 import (
-	client2 "MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/endToEnd/server"
-	"MulticastSDCCProject/pkg/rpc"
 	"context"
+	client2 "github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/server"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	"log"
