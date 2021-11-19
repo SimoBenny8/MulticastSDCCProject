@@ -1,12 +1,12 @@
 package restApi
 
 import (
+	"context"
 	"errors"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/proto"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 	"github.com/gin-gonic/gin"
-	context "golang.org/x/net/context"
 	"log"
 	"net/http"
 	"sync"
