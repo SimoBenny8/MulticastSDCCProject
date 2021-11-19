@@ -1,7 +1,6 @@
 package restApi
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
@@ -13,6 +12,7 @@ import (
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/net/context"
 	"log"
 	"math/rand"
 	"strconv"
