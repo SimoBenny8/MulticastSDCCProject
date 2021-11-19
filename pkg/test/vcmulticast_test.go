@@ -1,10 +1,10 @@
 package test
 
 import (
-	"MulticastSDCCProject/pkg/VectorClockMulticast"
-	client2 "MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/testUtil"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/VectorClockMulticast"
+	client2 "github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/testUtil"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"strconv"
@@ -76,7 +76,7 @@ func TestOneToManyVC(t *testing.T) {
 		wg2.Add(1)
 		go func() {
 			m := &rpc.Packet{Message: messages[i]}
-			VectorClockMulticast.SendMessageToAll(m, 0, node.NodeId, delay, 0)
+			VectorClockMulticast.SendMessageToAll(m, 0, node.NodeId, delay)
 			wg2.Done()
 		}()
 

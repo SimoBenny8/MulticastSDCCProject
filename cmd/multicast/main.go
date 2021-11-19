@@ -1,12 +1,12 @@
 package main
 
 import (
-	server2 "MulticastSDCCProject/pkg/ServiceRegistry/server"
-	"MulticastSDCCProject/pkg/endToEnd/server"
-	"MulticastSDCCProject/pkg/restApi"
-	"MulticastSDCCProject/pkg/util"
 	"flag"
 	"fmt"
+	server2 "github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/server"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/server"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/restApi"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -21,7 +21,7 @@ func main() {
 	restPath := flag.String("restPath", util.GetEnvStringWithDefault("REST_PATH", "/multicast/v1"), "path of the rest api")
 	numThreads := flag.Uint("nThreads", uint(util.GetEnvIntWithDefault("NUM_THREADS", 1)), "number of threads used to multicast messages")
 	verb := flag.Bool("verbose", util.GetEnvBoolWithDefault("VERBOSE", true), "Turn verbose mode on or off.")
-	registry_addr := flag.String("registryAddr", "registry:90", "service registry address")
+	registryAddr := flag.String("registryAddr", "registry:90", "service registry address")
 	r := flag.Bool("registry", util.GetEnvBoolWithDefault("REGISTRY", false), "start multicast registry")
 	application := flag.Bool("application", util.GetEnvBoolWithDefault("APP", false), "start multicast application")
 	//myId := flag.Int("id", util.GetEnvIntWithDefault("ID", 0), "number id of member")
@@ -69,7 +69,7 @@ func main() {
 
 		wg.Add(1)
 		go func() {
-			err := restApi.Run(*grpcPort, *restPort, *registry_addr, *restPath, int(*numThreads), *delay, *verb)
+			err := restApi.Run(*grpcPort, *restPort, *registryAddr, *restPath, int(*numThreads), *delay, *verb)
 			if err != nil {
 				log.Println("Error in running applicatioon", err.Error())
 				return

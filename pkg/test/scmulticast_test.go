@@ -1,10 +1,10 @@
 package test
 
 import (
-	"MulticastSDCCProject/pkg/MulticastScalarClock"
-	client2 "MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/testUtil"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
+	client2 "github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/testUtil"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"strconv"

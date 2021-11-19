@@ -1,15 +1,15 @@
 package main
 
 import (
-	"MulticastSDCCProject/pkg/MulticastScalarClock"
-	"MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/endToEnd/server"
-	"MulticastSDCCProject/pkg/pool"
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/util"
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/server"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"log"
 	"math/rand"
 	"os"
@@ -72,7 +72,7 @@ func main() {
 
 	pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, *port, node.NodeId, int(*delay))
 	go MulticastScalarClock.Receive(*port, node.NodeId, int(*delay))
-	go MulticastScalarClock.Deliver(myConn, len(connections), node.NodeId, int(*delay))
+	go MulticastScalarClock.Deliver(len(connections), node.NodeId, int(*delay))
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Insert message: ")

@@ -1,7 +1,7 @@
 package VectorClockMulticast
 
 import (
-	"MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 	"sync"
 )
 

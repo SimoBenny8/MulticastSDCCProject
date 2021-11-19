@@ -1,13 +1,13 @@
 package server
 
 import (
-	"MulticastSDCCProject/pkg/MulticastScalarClock"
-	"MulticastSDCCProject/pkg/SQMulticast"
-	"MulticastSDCCProject/pkg/VectorClockMulticast"
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/util"
 	"context"
 	"fmt"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/SQMulticast"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/VectorClockMulticast"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"log"

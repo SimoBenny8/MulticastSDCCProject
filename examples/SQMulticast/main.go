@@ -1,14 +1,14 @@
 package main
 
 import (
-	"MulticastSDCCProject/pkg/SQMulticast"
-	"MulticastSDCCProject/pkg/endToEnd/client"
-	"MulticastSDCCProject/pkg/endToEnd/server"
-	"MulticastSDCCProject/pkg/pool"
-	"MulticastSDCCProject/pkg/rpc"
-	"MulticastSDCCProject/pkg/util"
 	"bufio"
 	"flag"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/SQMulticast"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/server"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"log"
 	"math/rand"
 	"os"
