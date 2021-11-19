@@ -1,15 +1,16 @@
 package restApi
 
 import (
-	"context"
 	"errors"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/proto"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 	"github.com/gin-gonic/gin"
+	context "golang.org/x/net/context"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type routes struct {
@@ -139,7 +140,7 @@ func sendMessage(c *gin.Context) {
 }
 
 func closeGroup(c *gin.Context) {
-
+	context_, _ := context.WithTimeout(c, time.Second)
 	mId := c.Param("mId")
 	GMu.RLock()
 	defer GMu.RUnlock()
@@ -150,7 +151,7 @@ func closeGroup(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group not found"})
 	}
 
-	_, err := proto.RegistryClient.CloseGroup(context.Background(), &proto.RequestData{
+	_, err := proto.RegistryClient.CloseGroup(context_, &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
 		ClientId:    mId,
 	}, nil)
