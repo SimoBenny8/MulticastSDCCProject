@@ -22,8 +22,8 @@ func main() {
 	numThreads := flag.Uint("nThreads", uint(util.GetEnvIntWithDefault("NUM_THREADS", 1)), "number of threads used to multicast messages")
 	verb := flag.Bool("verbose", util.GetEnvBoolWithDefault("VERBOSE", true), "Turn verbose mode on or off.")
 	registryAddr := flag.String("registryAddr", "registry:90", "service registry address")
-	r := flag.Bool("registry", util.GetEnvBoolWithDefault("REGISTRY", false), "start multicast registry")
-	application := flag.Bool("application", util.GetEnvBoolWithDefault("APP", false), "start multicast application")
+	r := flag.Bool("registry", util.GetEnvBoolWithDefault("REGISTRY", true), "start multicast registry")
+	application := flag.Bool("application", util.GetEnvBoolWithDefault("APP", true), "start multicast application")
 	//myId := flag.Int("id", util.GetEnvIntWithDefault("ID", 0), "number id of member")
 
 	//utils.Myid = *myId
