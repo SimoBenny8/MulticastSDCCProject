@@ -181,7 +181,7 @@ func InitGroup(info *ServiceProto.Group, group *MulticastGroup, port uint) {
 		nodes := MulticastScalarClock.GetNodes()
 		for i := range nodes {
 			if nodes[i].MyConn == myConn {
-				go MulticastScalarClock.Deliver(myConn, len(connections), nodes[i].NodeId, int(Delay))
+				go MulticastScalarClock.Deliver(len(connections), nodes[i].NodeId, int(Delay))
 			}
 		}
 	}
@@ -231,7 +231,7 @@ func initGroupCommunication(groupInfo *ServiceProto.Group, port uint, connection
 	if groupInfo.MulticastType.String() == util.SCMULTICAST {
 		log.Println("STARTING SCMULTICAST")
 		node := new(MulticastScalarClock.NodeSC)
-		node.NodeId = uint(rand.Intn(5))
+		node.NodeId = uint(rand.Intn(5000))
 		node.Connections = connections
 		node.ProcessingMessages = make(MulticastScalarClock.OrderedMessages, 0, 100)
 		node.MyConn = myConn
@@ -243,10 +243,8 @@ func initGroupCommunication(groupInfo *ServiceProto.Group, port uint, connection
 
 		MulticastScalarClock.AppendNodes(*node)
 
-		//nodes := MulticastScalarClock.GetNodes()
-		//trovare j-esimo nodo
 		pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, port, node.NodeId, int(Delay))
-		go MulticastScalarClock.Receive(1, node.NodeId, int(Delay))
+		go MulticastScalarClock.Receive(node.NodeId, node.NodeId, int(Delay))
 	}
 	if groupInfo.MulticastType.String() == util.VCMULTICAST {
 		log.Println("STARTING VCMULTICAST")
@@ -262,17 +260,14 @@ func initGroupCommunication(groupInfo *ServiceProto.Group, port uint, connection
 		node := new(VectorClockMulticast.NodeVC)
 		wg.Lock()
 		node.InitLocalTimestamp(&wg, len(connections))
-		node.NodeId = uint(rand.Intn(5))
+		node.NodeId = uint(rand.Intn(5000))
 		node.Connections = connections
 		node.DeliverQueue = make(VectorClockMulticast.VectorMessages, 0, 100)
 		node.MyConn = myConn
 		node.MyNode = myNode
 
-		VectorClockMulticast.AppendNodes(*node)
-		//wg.Lock()
-		//VectorClockMulticast.InitLocalTimestamp(&wg, len(connections))
-		//VectorClockMulticast.SetMyNode(myNode)
-		//VectorClockMulticast.SetConnections(connections)
+		wg.Lock()
+		VectorClockMulticast.AppendNodes(*node, &wg)
 		pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, port, node.NodeId, int(Delay))
 
 	}

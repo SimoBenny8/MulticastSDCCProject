@@ -69,13 +69,14 @@ func main() {
 	node := new(VectorClockMulticast.NodeVC)
 	wg.Lock()
 	node.InitLocalTimestamp(&wg, len(connections))
-	node.NodeId = uint(rand.Intn(5))
+	node.NodeId = uint(rand.Intn(5000))
 	node.Connections = connections
 	node.DeliverQueue = make(VectorClockMulticast.VectorMessages, 0, 100)
 	node.MyConn = myConn
 	node.MyNode = myNode
 
-	VectorClockMulticast.AppendNodes(*node)
+	wg.Lock()
+	VectorClockMulticast.AppendNodes(*node, &wg)
 
 	pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, *port, node.NodeId, int(*delay))
 	go VectorClockMulticast.Deliver(node.NodeId, int(*delay))

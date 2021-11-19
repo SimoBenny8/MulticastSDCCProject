@@ -85,7 +85,7 @@ func DeliverSeq(delay int) {
 					md[util.TYPENODE] = util.MEMBER //a chi arriva
 					md[util.MESSAGEID] = message.Id
 					md[util.RECEIVER] = seq.Connections[i].Connection.Target()
-					seq.LocalErr = seq.Connections[i].Send(md, message.Message.Message, nil, delay)
+					seq.LocalErr = seq.Connections[i].Send(md, []byte(""), message.Message.Message, nil, delay)
 					if seq.LocalErr != nil {
 						log.Println(seq.LocalErr.Error())
 					}

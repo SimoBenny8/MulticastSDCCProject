@@ -5,12 +5,11 @@ import (
 	"MulticastSDCCProject/pkg/pool"
 	"MulticastSDCCProject/pkg/rpc"
 	"errors"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/net/context"
 	"log"
 	"net/http"
 	"sync"
-
-	"github.com/gin-gonic/gin"
-	"golang.org/x/net/context"
 )
 
 type routes struct {

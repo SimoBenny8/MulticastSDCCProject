@@ -36,17 +36,17 @@ func GetNodes() []NodeSC {
 	return Nodes
 }
 
-func AppendDeliverMessages(mex *rpc.Packet, nodeId uint) {
+func (node *NodeSC) AppendDeliverMessages(mex *rpc.Packet) {
 	m := DecodeMsg(mex)
-	pos := checkPositionNode(nodeId)
-	Nodes[pos].DeliverQueue = append(Nodes[pos].DeliverQueue, *m)
+	//pos := checkPositionNode(nodeId)
+	node.DeliverQueue = append(node.DeliverQueue, *m)
 }
 
-func AppendOrderedAck(ack *rpc.Packet, nodeId uint) {
+func (node *NodeSC) AppendOrderedAck(ack *rpc.Packet) {
 	m := DecodeMsg(ack)
-	pos := checkPositionNode(nodeId)
-	Nodes[pos].OrderedAck = append(Nodes[pos].OrderedAck, *m)
-	Nodes[pos].OtherTs = append(Nodes[pos].OtherTs, OtherTimestamp{
+	//pos := checkPositionNode(nodeId)
+	node.OrderedAck = append(node.OrderedAck, *m)
+	node.OtherTs = append(node.OtherTs, OtherTimestamp{
 		id:                 m.Id,
 		otherNodeTimestamp: m.FirstTsInQueue,
 	})

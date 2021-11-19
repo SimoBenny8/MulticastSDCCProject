@@ -1,7 +1,6 @@
 package MulticastScalarClock
 
 import (
-	"MulticastSDCCProject/pkg/endToEnd/client"
 	"MulticastSDCCProject/pkg/rpc"
 	"MulticastSDCCProject/pkg/util"
 	"bytes"
@@ -28,10 +27,10 @@ var (
 	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
 )
 
-func AddingReceivingMex(mex *rpc.Packet, nodeId uint) {
-	pos := checkPositionNode(nodeId)
+func (node *NodeSC) AddingReceivingMex(mex *rpc.Packet) {
+	//pos := checkPositionNode(nodeId)
 	m := DecodeMsg(mex)
-	Nodes[pos].ReceivedMessage = append(Nodes[pos].ReceivedMessage, *m)
+	node.ReceivedMessage = append(node.ReceivedMessage, *m)
 }
 
 func GetTimestamp(nodeId uint) int {
@@ -70,9 +69,8 @@ func SendMessageToAll(message *MessageTimestamp, nodeId uint, delay int) {
 	for i := range Nodes[pos].Connections {
 		wg.Add(1)
 		ind := i
-		md[util.RECEIVER] = Nodes[pos].Connections[ind].Connection.Target()
 		go func() {
-			err = Nodes[pos].Connections[ind].Send(md, b, nil, delay)
+			err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()), b, nil, delay)
 			//result := <-respChannel
 			//log.Println("ack: ", string(result))
 			if err != nil {
@@ -119,42 +117,37 @@ func HasMinimumTimestamp(message *MessageTimestamp, nodeId uint) bool {
 	return false
 }
 
-func Deliver(myConn *client.Client, numConn int, nodeId uint, delay int) {
+func Deliver(numConn int, nodeId uint, delay int) {
 	rand.Seed(time.Now().UnixNano())
 	pos := checkPositionNode(nodeId)
 	for {
 		if len(Nodes[pos].ProcessingMessages) > 0 && IsCorrectNumberAck(&Nodes[pos].ProcessingMessages[0], numConn, nodeId) && HasMinimumTimestamp(&Nodes[pos].ProcessingMessages[0], nodeId) {
+			var wg sync.Mutex
+			wg.Lock()
 			message := Nodes[pos].Dequeue()
 			EmptyOrderedAck(message.Id, nodeId)
 			EmptyOtherTimestamp(message.Id, nodeId)
-			Nodes[pos].DeliverQueue = append(Nodes[pos].DeliverQueue, message)
-
-			/*	var wg sync.Mutex
-				wg.Lock()
-				message := Nodes[pos].Dequeue()
-				EmptyOrderedAck(message.Id, nodeId)
-				EmptyOtherTimestamp(message.Id, nodeId)
-				var LocalErr error
-				md := make(map[string]string)
-				md[util.TYPEMC] = util.SCMULTICAST
-				md[util.ACK] = util.FALSE
-				md[util.TIMESTAMPMESSAGE] = util.EMPTY
-				md[util.DELIVER] = util.TRUE
-				md[util.NODEID] = strconv.Itoa(int(nodeId))
-				md[util.RECEIVER] = Nodes[pos].MyConn.Connection.Target()
-				b, err := json.Marshal(&message)
-				if err != nil {
-					log.Printf("Error marshalling: %s", err)
-					return
+			var LocalErr error
+			md := make(map[string]string)
+			md[util.TYPEMC] = util.SCMULTICAST
+			md[util.ACK] = util.FALSE
+			md[util.TIMESTAMPMESSAGE] = util.EMPTY
+			md[util.DELIVER] = util.TRUE
+			md[util.NODEID] = strconv.Itoa(int(nodeId))
+			md[util.RECEIVER] = Nodes[pos].MyConn.Connection.Target()
+			b, err := json.Marshal(&message)
+			if err != nil {
+				log.Printf("Error marshalling: %s", err)
+				return
+			}
+			go func(wg *sync.Mutex) {
+				defer wg.Unlock()
+				LocalErr = Nodes[pos].MyConn.Send(md, []byte(Nodes[pos].MyConn.Connection.Target()), b, nil, delay)
+				if LocalErr != nil {
+					log.Println(LocalErr.Error())
 				}
-				go func(wg *sync.Mutex) {
-					defer wg.Unlock()
-					LocalErr = Nodes[pos].MyConn.Send(md, b, nil, delay)
-					if LocalErr != nil {
-						log.Println(LocalErr.Error())
-					}
 
-				}(&wg)*/
+			}(&wg)
 
 		}
 	}
@@ -168,12 +161,13 @@ func Receive(addr uint, nodeId uint, delay int) {
 	for {
 		if len(Nodes[pos].ReceivedMessage) > 0 {
 			var wg sync.WaitGroup
+			var mutex sync.Mutex
 			mt := Nodes[pos].ReceivedMessage[0]
 			Nodes[pos].Timestamp = int(math.Max(float64(mt.Timestamp), float64(Nodes[pos].Timestamp)))
 			Nodes[pos].Timestamp += 1
 			log.Println("Original Message: ", string(mt.OPacket.Message), "Timestamp: ", mt.Timestamp)
-
-			Nodes[pos].AddToQueue(&mt)
+			mutex.Lock()
+			Nodes[pos].AddToQueue(&mt, &mutex)
 			if len(Nodes[pos].ProcessingMessages) > 0 {
 				tInQueue = Nodes[pos].ProcessingMessages[0].Timestamp
 			} else {
@@ -197,10 +191,9 @@ func Receive(addr uint, nodeId uint, delay int) {
 			for i := range Nodes[pos].Connections {
 				wg.Add(1)
 				ind := i
-				md[util.RECEIVER] = Nodes[pos].Connections[ind].Connection.Target()
 				go func() {
 					defer wg.Done()
-					err = Nodes[pos].Connections[ind].Send(md, b, nil, delay)
+					err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()), b, nil, delay)
 					if err != nil {
 						log.Fatal("error during ack message")
 					}
@@ -222,7 +215,7 @@ func IsCorrectNumberAck(message *MessageTimestamp, numCon int, nodeId uint) bool
 	}
 
 	if i == numCon {
-		log.Println("raggiunto numero di ack corretto")
+		//log.Println("raggiunto numero di ack corretto")
 		return true
 
 	}

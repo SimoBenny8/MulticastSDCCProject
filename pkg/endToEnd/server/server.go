@@ -101,30 +101,39 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			case util.SCMULTICAST:
 				log.Println("case SCMulticast")
 				if md.Get(util.ACK)[0] == util.TRUE {
-					//id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
 					nodes := MulticastScalarClock.GetNodes()
-					for i := range nodes {
-						if md.Get(util.RECEIVER)[0] == nodes[i].MyConn.Connection.Target() {
-							MulticastScalarClock.AppendOrderedAck(message, nodes[i].NodeId)
-							//log.Println("length queue:" + strconv.Itoa(len(nodes[i].DeliverQueue)))
+					if len(nodes) > 1 {
+						for i := range nodes {
+							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+								nodes[i].AppendOrderedAck(message)
+							}
 						}
+					} else {
+						nodes[0].AppendOrderedAck(message)
 					}
+
 				} else if md.Get(util.DELIVER)[0] == util.TRUE {
-					log.Println("deliver called for message: " + string(message.Message))
 					nodes := MulticastScalarClock.GetNodes()
-					for i := range nodes {
-						if md.Get(util.RECEIVER)[0] == nodes[i].MyConn.Connection.Target() {
-							MulticastScalarClock.AppendDeliverMessages(message, nodes[i].NodeId)
-							//log.Println("length queue:" + strconv.Itoa(len(nodes[i].DeliverQueue)))
+					if len(nodes) > 1 {
+						for i := range nodes {
+							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+								nodes[i].AppendDeliverMessages(message)
+							}
 						}
+					} else {
+						nodes[0].AppendDeliverMessages(message)
 					}
+					log.Println("deliver called for message: " + string(message.Message))
 				} else {
-					//id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
 					nodes := MulticastScalarClock.GetNodes()
-					for i := range nodes {
-						if md.Get(util.RECEIVER)[0] == nodes[i].MyConn.Connection.Target() {
-							MulticastScalarClock.AddingReceivingMex(message, nodes[i].NodeId)
+					if len(nodes) > 1 {
+						for i := range nodes {
+							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+								nodes[i].AddingReceivingMex(message)
+							}
 						}
+					} else {
+						nodes[0].AddingReceivingMex(message)
 					}
 				}
 			case util.SQMULTICAST:
@@ -151,12 +160,28 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			case util.VCMULTICAST:
 				log.Println("case VCMulticast")
 				if md.Get(util.DELIVER)[0] == util.TRUE {
-					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
-					VectorClockMulticast.AppendDeliverQueue(message, uint(id))
+					nodes := VectorClockMulticast.GetNodes()
+					if len(nodes) > 1 {
+						for i := range nodes {
+							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+								nodes[i].AppendDeliverQueue(message)
+							}
+						}
+					} else {
+						nodes[0].AppendDeliverQueue(message)
+					}
 					log.Println("deliver called for message: " + string(message.Message))
 				} else {
-					id, _ := strconv.Atoi(md.Get(util.NODEID)[0])
-					VectorClockMulticast.ReceiveMessage(message, uint(id))
+					nodes := VectorClockMulticast.GetNodes()
+					if len(nodes) > 1 {
+						for i := range nodes {
+							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+								nodes[i].ReceiveMessage(message)
+							}
+						}
+					} else {
+						nodes[0].ReceiveMessage(message)
+					}
 				}
 			default:
 				panic("unrecognized value")

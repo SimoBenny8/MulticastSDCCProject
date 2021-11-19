@@ -20,23 +20,24 @@ func GetNodes() []NodeVC {
 }
 
 func checkPositionNode(id uint) int {
-	for i := range Nodes {
-		if Nodes[i].NodeId == id {
+	nodes := GetNodes()
+	for i := range nodes {
+		if nodes[i].NodeId == id {
 			return i
 		}
 	}
 	return -1
 }
 
-func AppendNodes(node NodeVC) {
+func AppendNodes(node NodeVC, wg *sync.Mutex) {
 	Nodes = append(Nodes, node)
-
+	wg.Unlock()
 }
 
-func AppendDeliverQueue(mex *rpc.Packet, nodeId uint) {
+func (node *NodeVC) AppendDeliverQueue(mex *rpc.Packet) {
 	var wg sync.Mutex
 	wg.Lock()
 	m := DecodeMsg(mex, &wg)
-	pos := checkPositionNode(nodeId)
-	Nodes[pos].DeliverQueue = append(Nodes[pos].DeliverQueue, *m)
+	//pos := checkPositionNode(nodeId)
+	node.DeliverQueue = append(node.DeliverQueue, *m)
 }

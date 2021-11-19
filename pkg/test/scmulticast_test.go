@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -16,7 +17,7 @@ func TestOneToManySC(t *testing.T) {
 	//rand.Seed(time.Now().UnixNano())
 
 	var connections []*client2.Client
-	//var wg sync.WaitGroup
+	var wg sync.WaitGroup
 	//var port uint
 
 	delay := 5
@@ -42,7 +43,7 @@ func TestOneToManySC(t *testing.T) {
 	MulticastScalarClock.AppendNodes(*node)
 
 	go MulticastScalarClock.Receive(uint(1), node.NodeId, delay)
-	go MulticastScalarClock.Deliver(node.MyConn, len(connections), node.NodeId, delay)
+	go MulticastScalarClock.Deliver(len(connections), node.NodeId, delay)
 
 	node2 := new(MulticastScalarClock.NodeSC)
 	node2.NodeId = uint(rand.Intn(200))
@@ -58,7 +59,7 @@ func TestOneToManySC(t *testing.T) {
 	MulticastScalarClock.AppendNodes(*node2)
 
 	go MulticastScalarClock.Receive(uint(2), node2.NodeId, delay)
-	go MulticastScalarClock.Deliver(node2.MyConn, len(connections), node2.NodeId, delay)
+	go MulticastScalarClock.Deliver(len(connections), node2.NodeId, delay)
 
 	node3 := new(MulticastScalarClock.NodeSC)
 	node3.NodeId = uint(rand.Intn(200))
@@ -74,28 +75,26 @@ func TestOneToManySC(t *testing.T) {
 	MulticastScalarClock.AppendNodes(*node3)
 
 	go MulticastScalarClock.Receive(uint(3), node3.NodeId, delay)
-	go MulticastScalarClock.Deliver(node3.MyConn, len(connections), node3.NodeId, delay)
+	go MulticastScalarClock.Deliver(len(connections), node3.NodeId, delay)
 
-	//for i := range messages {
-	//	wg.Add(1)
-	go func() {
-		message := &MulticastScalarClock.MessageTimestamp{Address: uint(1), OPacket: rpc.Packet{Message: messages[0]}, Timestamp: MulticastScalarClock.GetTimestamp(node.NodeId), Id: MulticastScalarClock.RandSeq(5)}
-		MulticastScalarClock.SendMessageToAll(message, node.NodeId, delay)
-		//		wg.Done()
-	}()
+	for i := range messages {
+		wg.Add(1)
+		go func() {
+			message := &MulticastScalarClock.MessageTimestamp{Address: uint(1), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node.NodeId), Id: MulticastScalarClock.RandSeq(5)}
+			MulticastScalarClock.SendMessageToAll(message, node.NodeId, delay)
+			wg.Done()
+		}()
 
-	//	wg.Wait()
-	//}
+		wg.Wait()
+	}
 
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 80)
 	nodes := MulticastScalarClock.GetNodes()
 	for i := range nodes {
-		assert.Equal(t, 1, len(nodes[i].DeliverQueue))
-		//log.Println(nodes[i].DeliverQueue)
-		//assert.Equal(t, messages[0], nodes[i].DeliverQueue[0].OPacket.Message)
-		//assert.Equal(t, messages[1], nodes[i].DeliverQueue[1].OPacket.Message)
-		//assert.Equal(t, messages[2], nodes[i].DeliverQueue[2].OPacket.Message)
-
+		assert.Equal(t, 3, len(nodes[i].DeliverQueue))
 	}
+	assert.Equal(t, nodes[0].DeliverQueue, nodes[1].DeliverQueue)
+	assert.Equal(t, nodes[1].DeliverQueue, nodes[2].DeliverQueue)
+	assert.Equal(t, nodes[2].DeliverQueue, nodes[0].DeliverQueue)
 
 }
