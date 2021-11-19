@@ -6,7 +6,8 @@ service PacketService {
 }
 
 message Packet{
-  bytes Message = 1;
+  bytes Header = 1;
+  bytes Message = 2;
 }
 
 message ResponsePacket{

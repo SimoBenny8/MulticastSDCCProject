@@ -40,18 +40,20 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
+func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int, pos int) {
 
-	pos := checkPositionNode(nodeId)
+	//pos := checkPositionNode(nodeId)
 	var wg sync.WaitGroup
 	Nodes[pos].Timestamp[Nodes[pos].MyNode] += 1
-	mex := &MessageVectorTimestamp{Address: port, OPacket: *m, Timestamp: Nodes[pos].Timestamp, Id: RandSeq(5)}
 
+	mex := &MessageVectorTimestamp{Address: port, OPacket: *m, Timestamp: Nodes[pos].Timestamp, Id: RandSeq(5)}
+	//log.Println("Receiver:", md[util.RECEIVER])
 	b, err := json.Marshal(&mex)
 	if err != nil {
 		log.Printf("Error marshalling: %s", err)
 		return
 	}
+
 	md := make(map[string]string)
 	md[util.TYPEMC] = util.VCMULTICAST
 	md[util.ACK] = util.FALSE
@@ -61,8 +63,9 @@ func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 	for i := range Nodes[pos].Connections {
 		wg.Add(1)
 		ind := i
+
 		go func() {
-			err = Nodes[pos].Connections[ind].Send(md, b, nil, delay)
+			err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()), b, nil, delay)
 			//result := <-respChannel
 			//log.Println("ack: ", string(result))
 			if err != nil {
@@ -75,9 +78,9 @@ func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 	wg.Wait()
 }
 
-func ReceiveMessage(message *rpc.Packet, nodeId uint) {
+func (node *NodeVC) ReceiveMessage(message *rpc.Packet) {
 	//var err error
-	pos := checkPositionNode(nodeId)
+	//pos := checkPositionNode(nodeId)
 	var wg sync.Mutex
 	wg.Lock()
 	mt := DecodeMsg(message, &wg)
@@ -85,7 +88,7 @@ func ReceiveMessage(message *rpc.Packet, nodeId uint) {
 
 	log.Println("Original Message: ", string(mt.OPacket.Message), "Timestamp: ", mt.Timestamp)
 	wg.Lock()
-	Nodes[pos].AddToProcessingQueue(mt, &wg)
+	node.AddToProcessingQueue(mt, &wg)
 
 }
 
@@ -165,6 +168,7 @@ func Deliver(nodeId uint, delay int) {
 			md[util.TIMESTAMPMESSAGE] = util.EMPTY
 			md[util.DELIVER] = util.TRUE
 			md[util.NODEID] = strconv.Itoa(int(Nodes[pos].NodeId))
+			md[util.RECEIVER] = Nodes[pos].MyConn.Connection.Target()
 			index := indexSender(&message, Nodes[pos].NodeId)
 			for i := range message.Timestamp {
 				Nodes[pos].Timestamp[i] = int(math.Max(float64(message.Timestamp[i]), float64(Nodes[pos].Timestamp[i])))
@@ -178,7 +182,7 @@ func Deliver(nodeId uint, delay int) {
 			}
 			go func(wg *sync.Mutex) {
 				defer wg.Unlock()
-				LocalErr = Nodes[pos].MyConn.Send(md, b, nil, delay)
+				LocalErr = Nodes[pos].MyConn.Send(md, []byte(Nodes[pos].MyConn.Connection.Target()), b, nil, delay)
 				if LocalErr != nil {
 					log.Println(LocalErr.Error())
 					Nodes[pos].Timestamp[index] -= 1

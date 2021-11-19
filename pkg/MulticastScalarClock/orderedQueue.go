@@ -3,6 +3,7 @@ package MulticastScalarClock
 import (
 	"log"
 	"sort"
+	"sync"
 )
 
 type OrderedMessages []MessageTimestamp
@@ -20,12 +21,12 @@ func (node *NodeSC) OrderingMessage(messages []MessageTimestamp) OrderedMessages
 
 // Create
 
-func (node *NodeSC) AddToQueue(m *MessageTimestamp) {
+func (node *NodeSC) AddToQueue(m *MessageTimestamp, wg *sync.Mutex) {
 
 	log.Println("messaggio aggiunto in coda", node.NodeId)
 	node.ProcessingMessages = append(node.ProcessingMessages, *m)
 	node.ProcessingMessages = node.OrderingMessage(node.ProcessingMessages)
-	return
+	wg.Unlock()
 }
 
 func (node *NodeSC) Dequeue() MessageTimestamp {
