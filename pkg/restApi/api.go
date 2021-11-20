@@ -155,8 +155,9 @@ func closeGroup(c *gin.Context) {
 		MulticastId: group.Group.MulticastId,
 		ClientId:    mId,
 	})
+	log.Println("Group Closed")
 	if err != nil {
-		log.Println("Error in closing group")
+		log.Println("Error in closing group", err)
 	}
 
 }
