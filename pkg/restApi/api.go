@@ -136,7 +136,7 @@ func sendMessage(c *gin.Context) {
 
 	log.Println("Trying to sending ", payload)
 
-	pool.Pool.Message <- &rpc.Packet{Message: payload}
+	pool.Pool.Message <- &rpc.Packet{Header: []byte("restApi:mId:" + mId), Message: payload}
 
 	c.IndentedJSON(http.StatusOK, gin.H{"message": payload})
 }

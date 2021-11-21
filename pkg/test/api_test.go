@@ -90,7 +90,7 @@ func StartGroupTesting(host string) {
 }
 
 func TestGetInfoGroup(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "BM"
+	url := "http://localhost:" + "8081" + "/multicast/v1/groups/" + "BM"
 	method := "GET"
 
 	client := &http.Client{}
@@ -151,11 +151,12 @@ func TestCloseGroup(t *testing.T) {
 }
 
 func TestSendMessage(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/messaging/" + "Q"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/messages/" + "BM"
 	method := "POST"
 	m := []byte("message")
-	//obj := Message{m}
-	jsonMessage, _ := json.Marshal(m)
+
+	obj := restApi.Message{Payload: m}
+	jsonMessage, _ := json.Marshal(obj)
 	reader := strings.NewReader(string(jsonMessage))
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, reader)
@@ -187,7 +188,7 @@ func TestSendMessage(t *testing.T) {
 }
 
 func TestGetMessages(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/messaging/" + "Q"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/messages/" + "BM"
 	method := "GET"
 
 	client := &http.Client{}
