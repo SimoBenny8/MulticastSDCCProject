@@ -19,6 +19,13 @@ func TestAddGroups(t *testing.T) {
 	AddGroupTesting("8082")
 }
 
+func TestStartGroup(t *testing.T) {
+
+	StartGroupTesting("8080")
+	StartGroupTesting("8081")
+	StartGroupTesting("8082")
+}
+
 func AddGroupTesting(host string) {
 
 	obj := restApi.MulticastReq{
@@ -54,8 +61,8 @@ func AddGroupTesting(host string) {
 	fmt.Println(string(body))
 }
 
-func TestStartGroup(T *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "Q"
+func StartGroupTesting(host string) {
+	url := "http://localhost:" + host + "/multicast/v1/groups/" + "BM"
 	method := "PUT"
 
 	client := &http.Client{}
@@ -83,7 +90,7 @@ func TestStartGroup(T *testing.T) {
 }
 
 func TestGetInfoGroup(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "Q"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "BM"
 	method := "GET"
 
 	client := &http.Client{}
@@ -111,7 +118,7 @@ func TestGetInfoGroup(t *testing.T) {
 }
 
 func TestCloseGroup(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "Q"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "BM"
 	method := "DELETE"
 
 	client := &http.Client{}

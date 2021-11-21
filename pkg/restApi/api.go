@@ -155,7 +155,7 @@ func closeGroup(c *gin.Context) {
 
 	_, err := RegClient.CloseGroup(context_, &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
-		ClientId:    mId,
+		ClientId:    group.clientId,
 	})
 	log.Println("Group Closed")
 	if err != nil {
