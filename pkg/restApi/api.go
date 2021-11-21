@@ -44,6 +44,8 @@ func getInfoGroup(c *gin.Context) {
 }
 
 func addGroup(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c, time.Second)
+	defer cancel()
 
 	var req MulticastReq
 	err := c.BindJSON(&req)
@@ -65,7 +67,7 @@ func addGroup(c *gin.Context) {
 
 	group, _ := MulticastGroups[multicastId]
 
-	registrationAns, err := RegClient.Register(context.Background(), &proto.RegInfo{
+	registrationAns, err := RegClient.Register(ctx, &proto.RegInfo{
 		MulticastId:   multicastId,
 		MulticastType: proto.TypeMulticast(multicastType),
 		Port:          uint32(GrpcPort),
