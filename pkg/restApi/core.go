@@ -135,14 +135,15 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 	}
 	members = append(members, group.clientId)
 
-	connections := make([]*client.Client, len(group.Group.Members))
-	i := 0
-	for _, member := range group.Group.Members {
-		connections[i] = client.Connect(member.Address)
+	connections := make([]*client.Client, len(members))
+	//i := 0
+	for i, member := range members {
+		log.Println("Connecting with", members[i])
+		connections[i] = client.Connect(member)
 		if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(port))) {
 			myConn = connections[i]
 		}
-		i++
+		//i++
 	}
 
 	// Initializing  data structures
