@@ -7,20 +7,26 @@ import (
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"strings"
 	"testing"
 )
 
-func TestAddGroup(t *testing.T) {
+func TestAddGroups(t *testing.T) {
+
+	AddGroupTesting("8080")
+	AddGroupTesting("8081")
+	AddGroupTesting("8082")
+}
+
+func AddGroupTesting(host string) {
 
 	obj := restApi.MulticastReq{
-		MulticastId:   string(rune(rand.Intn(100))),
+		MulticastId:   "BM",
 		MulticastType: util.BMULTICAST,
 	}
 	jsn, _ := json.Marshal(obj)
-	url := "http://localhost:8080/multicast/v1/groups"
+	url := "http://localhost:" + host + "/multicast/v1/groups"
 	method := "POST"
 	payload := strings.NewReader(string(jsn))
 

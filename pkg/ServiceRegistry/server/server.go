@@ -11,6 +11,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 )
 
 type RegistryServer struct {
@@ -35,8 +36,9 @@ func init() {
 func (s *RegistryServer) Register(ctx context.Context, in *proto.RegInfo) (*proto.RegAnswer, error) {
 
 	log.Println("Starting register service ")
-
-	source, ok := peer.FromContext(ctx)
+	c, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	source, ok := peer.FromContext(c)
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "Missing source address")
 	}
@@ -53,8 +55,15 @@ func (s *RegistryServer) Register(ctx context.Context, in *proto.RegInfo) (*prot
 	multicastGroup, exists := groups[multicastId]
 
 	if exists {
-		log.Println("group already exists")
-		return nil, nil
+		if multicastGroup.groupInfo.MulticastType != in.MulticastType {
+			return nil, status.Errorf(codes.InvalidArgument, "MulticastType")
+		}
+		if multicastGroup.groupInfo.Status != proto.Status_OPENING {
+			return nil, status.Errorf(codes.PermissionDenied, "ServiceStarted")
+		}
+		if _, ok := multicastGroup.groupInfo.Members[srcAddr]; ok {
+			return nil, status.Errorf(codes.AlreadyExists, "Already Registered")
+		}
 	} else {
 		// Creating the group
 		multicastGroup = &MulticastGroup{groupInfo: &proto.Group{
