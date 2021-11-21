@@ -138,12 +138,8 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 	connections := make([]*client.Client, len(group.Group.Members))
 	i := 0
 	for _, member := range group.Group.Members {
-		connections[i] = client.Connect("localhost:" + member.Address)
-		portConn, localErr := strconv.Atoi(member.Address)
-		if localErr != nil {
-			log.Println("Error from atoi")
-		}
-		if portConn == int(port) {
+		connections[i] = client.Connect(member.Address)
+		if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(port))) {
 			myConn = connections[i]
 		}
 		i++
