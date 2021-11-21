@@ -6,6 +6,7 @@ import (
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/SQMulticast"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/VectorClockMulticast"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/restApi"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"google.golang.org/grpc"
@@ -13,6 +14,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -95,6 +97,19 @@ func getNetListener(port uint) (net.Listener, error) {
 //implementation of service message
 func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.ResponsePacket, error) {
 	log.Println("Received Message: ", string(message.Message))
+	if strings.Contains(string(message.Header), "restApi") {
+		strArr := strings.SplitAfter(string(message.Header), ":")
+		mid := strArr[2]
+		group := restApi.MulticastGroups[mid]
+		group.Group.ReceivedMessages = group.Group.ReceivedMessages + 1
+		group.MessageMu.Lock()
+		defer group.MessageMu.Unlock()
+		msgh := restApi.Message{
+			Payload: message.Message,
+		}
+		group.Messages = append(group.Messages, msgh)
+	}
+
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if len(md) > 0 {
 			switch values := md.Get(util.TYPEMC); values[0] {
