@@ -130,9 +130,7 @@ func sendMessage(c *gin.Context) {
 		return
 	}
 	log.Println("Trying to multicasting message to group ", mId)
-	//multicastType := group.Group.MulticastType
 	payload := req.Payload
-	//mtype, ok := ServiceProto.TypeMulticast_value[multicastType]
 
 	log.Println("Trying to sending ", payload)
 
@@ -153,11 +151,18 @@ func closeGroup(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group not found"})
 	}
 
-	_, err := RegClient.CloseGroup(context_, &proto.RequestData{
+	info, err := RegClient.CloseGroup(context_, &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
 		ClientId:    group.clientId,
 	})
 	log.Println("Group Closed")
+
+	MulticastGroups[info.MulticastId].Group.Status = proto.Status_CLOSED.String()
+	for key, _ := range MulticastGroups[info.MulticastId].Group.Members {
+		member1 := MulticastGroups[info.MulticastId].Group.Members[key]
+		member1.Ready = false
+		MulticastGroups[info.MulticastId].Group.Members[key] = member1
+	}
 	if err != nil {
 		log.Println("Error in closing group", err)
 	}
