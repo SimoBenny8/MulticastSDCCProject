@@ -90,7 +90,7 @@ func StartGroupTesting(host string) {
 }
 
 func TestGetInfoGroup(t *testing.T) {
-	url := "http://localhost:" + "8081" + "/multicast/v1/groups/" + "BM"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "BM"
 	method := "GET"
 
 	client := &http.Client{}
