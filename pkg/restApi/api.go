@@ -3,9 +3,13 @@ package restApi
 import (
 	"context"
 	"errors"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/SQMulticast"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/proto"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/VectorClockMulticast"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/pool"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -15,6 +19,27 @@ import (
 
 type routes struct {
 	router *gin.Engine
+}
+
+func getDeliverQueue(c *gin.Context) {
+	mId := c.Param("mId")
+	group, ok := MulticastGroups[mId]
+	if !ok {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group" + mId + "not found"})
+	}
+	if group.Group.MulticastType == util.SCMULTICAST {
+		nodes := MulticastScalarClock.GetNodes()
+		deliverQueue := nodes[0].DeliverQueue
+		c.IndentedJSON(http.StatusOK, gin.H{"deliverMessages": deliverQueue})
+	} else if group.Group.MulticastType == util.VCMULTICAST {
+		nodes := VectorClockMulticast.GetNodes()
+		deliverQueue := nodes[0].DeliverQueue
+		c.IndentedJSON(http.StatusOK, gin.H{"deliverMessages": deliverQueue})
+	} else if group.Group.MulticastType == util.SQMULTICAST {
+		nodes := SQMulticast.GetDeliverNodes()
+		deliverQueue := nodes[0]
+		c.IndentedJSON(http.StatusOK, gin.H{"deliverMessages": deliverQueue})
+	}
 }
 
 func getMessages(c *gin.Context) {
@@ -88,7 +113,7 @@ func addGroup(c *gin.Context) {
 	}
 
 	group = &MulticastGroup{
-		clientId: registrationAns.ClientId,
+		ClientId: registrationAns.ClientId,
 		Group: &MulticastInfo{
 			MulticastId:      registrationAns.GroupInfo.MulticastId,
 			MulticastType:    proto.TypeMulticast(multicastType).String(),
@@ -140,7 +165,7 @@ func sendMessage(c *gin.Context) {
 }
 
 func closeGroup(c *gin.Context) {
-	context_, _ := context.WithTimeout(c, time.Second)
+	//context_, _ := context.WithTimeout(c, time.Second)
 	mId := c.Param("mId")
 	GMu.RLock()
 	defer GMu.RUnlock()
@@ -151,21 +176,7 @@ func closeGroup(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group not found"})
 	}
 
-	info, err := RegClient.CloseGroup(context_, &proto.RequestData{
-		MulticastId: group.Group.MulticastId,
-		ClientId:    group.clientId,
-	})
-	log.Println("Group Closed")
-
-	MulticastGroups[info.MulticastId].Group.Status = proto.Status_CLOSED.String()
-	for key, _ := range MulticastGroups[info.MulticastId].Group.Members {
-		member1 := MulticastGroups[info.MulticastId].Group.Members[key]
-		member1.Ready = false
-		MulticastGroups[info.MulticastId].Group.Members[key] = member1
-	}
-	if err != nil {
-		log.Println("Error in closing group", err)
-	}
+	pool.Pool.Message <- &rpc.Packet{Header: []byte("restApi:mId:" + mId), Message: []byte("closeGroup:" + group.Group.MulticastId)}
 
 }
 
@@ -185,7 +196,7 @@ func startGroup(c *gin.Context) {
 
 	info, err := RegClient.StartGroup(context.Background(), &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
-		ClientId:    group.clientId})
+		ClientId:    group.ClientId})
 
 	if err != nil {
 		log.Println("Error in start group ", err.Error())

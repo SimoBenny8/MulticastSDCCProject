@@ -22,7 +22,7 @@ import (
 )
 
 type MulticastGroup struct {
-	clientId  string
+	ClientId  string
 	Group     *MulticastInfo
 	groupMu   sync.RWMutex
 	Messages  []Message
@@ -110,6 +110,7 @@ func (r routes) addGroups(rg *gin.RouterGroup) {
 	groups.DELETE("/:mId", closeGroup)
 	groups.POST("/messages/:mId", sendMessage)
 	groups.GET("/messages/:mId", getMessages)
+	groups.GET("/deliverQueue/:mId", getDeliverQueue)
 }
 
 func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
@@ -129,11 +130,11 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 	var members []string
 
 	for memberId, member := range group.Group.Members {
-		if memberId != group.clientId {
+		if memberId != group.ClientId {
 			members = append(members, member.Address)
 		}
 	}
-	members = append(members, group.clientId)
+	members = append(members, group.ClientId)
 
 	connections := make([]*client.Client, len(members))
 	//i := 0
@@ -155,7 +156,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 
 	groupInfo, err = RegClient.Ready(context.Background(), &proto.RequestData{
 		MulticastId: group.Group.MulticastId,
-		ClientId:    group.clientId,
+		ClientId:    group.ClientId,
 	})
 	if err != nil {
 		return

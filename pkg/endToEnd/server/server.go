@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/MulticastScalarClock"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/SQMulticast"
+	"github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/proto"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/VectorClockMulticast"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/restApi"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
@@ -108,6 +109,25 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			Payload: message.Message,
 		}
 		group.Messages = append(group.Messages, msgh)
+	}
+
+	if strings.Contains(string(message.Message), "closeGroup") {
+		strArr := strings.SplitAfter(string(message.Message), ":")
+		mid := strArr[len(strArr)-1]
+		group := restApi.MulticastGroups[mid]
+		groupInfo, err := restApi.RegClient.CloseGroup(context.Background(), &proto.RequestData{
+			MulticastId: mid,
+			ClientId:    group.ClientId,
+		})
+		if err != nil {
+			log.Println("Error in closing group")
+		}
+		restApi.MulticastGroups[groupInfo.MulticastId].Group.Status = proto.Status_CLOSED.String()
+		for key, _ := range restApi.MulticastGroups[groupInfo.MulticastId].Group.Members {
+			member1 := restApi.MulticastGroups[groupInfo.MulticastId].Group.Members[key]
+			member1.Ready = false
+			restApi.MulticastGroups[groupInfo.MulticastId].Group.Members[key] = member1
+		}
 	}
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
