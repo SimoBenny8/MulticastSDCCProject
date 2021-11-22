@@ -9,6 +9,7 @@ import (
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"log"
+	"strings"
 	"sync"
 )
 
@@ -61,7 +62,7 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 			} else if multicastType == util.VCMULTICAST {
 				VectorClockMulticast.SendMessageToAll(mex, port, nodeId, delay)
 
-			} else if multicastType == util.BMULTICAST {
+			} else if multicastType == util.BMULTICAST || strings.Contains(string(mex.Message), "closeGroup") {
 				for i := range connections {
 					md := make(map[string]string)
 					md[util.TYPEMC] = util.BMULTICAST
