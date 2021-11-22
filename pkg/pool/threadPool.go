@@ -65,7 +65,7 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 				for i := range connections {
 					md := make(map[string]string)
 					md[util.TYPEMC] = util.BMULTICAST
-					localErr = connections[i].Send(md, []byte(""), mex.Message, respChannel, delay)
+					localErr = connections[i].Send(md, mex.Header, mex.Message, respChannel, delay)
 					result := <-respChannel
 					fmt.Println(string(result)) //problema ack implosion
 				}
