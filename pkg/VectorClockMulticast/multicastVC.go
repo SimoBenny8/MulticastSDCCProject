@@ -65,7 +65,7 @@ func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 		ind := i
 
 		go func() {
-			err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()), b, nil, delay)
+			err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()+":"+string(m.Header)), b, nil, delay)
 			//result := <-respChannel
 			//log.Println("ack: ", string(result))
 			if err != nil {

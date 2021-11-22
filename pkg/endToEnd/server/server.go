@@ -99,7 +99,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 	log.Println("Received Message: ", string(message.Message))
 	if strings.Contains(string(message.Header), "restApi") {
 		strArr := strings.SplitAfter(string(message.Header), ":")
-		mid := strArr[2]
+		mid := strArr[len(strArr)-1]
 		group := restApi.MulticastGroups[mid]
 		group.Group.ReceivedMessages = group.Group.ReceivedMessages + 1
 		group.MessageMu.Lock()
@@ -117,9 +117,10 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 				log.Println("case SCMulticast")
 				if md.Get(util.ACK)[0] == util.TRUE {
 					nodes := MulticastScalarClock.GetNodes()
+					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+							if strArr[0] == nodes[i].MyConn.Connection.Target() {
 								nodes[i].AppendOrderedAck(message)
 							}
 						}
@@ -129,9 +130,10 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 
 				} else if md.Get(util.DELIVER)[0] == util.TRUE {
 					nodes := MulticastScalarClock.GetNodes()
+					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+							if strArr[0] == nodes[i].MyConn.Connection.Target() {
 								nodes[i].AppendDeliverMessages(message)
 							}
 						}
@@ -141,9 +143,10 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					log.Println("deliver called for message: " + string(message.Message))
 				} else {
 					nodes := MulticastScalarClock.GetNodes()
+					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+							if strArr[0] == nodes[i].MyConn.Connection.Target() {
 								nodes[i].AddingReceivingMex(message)
 							}
 						}
@@ -176,9 +179,10 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 				log.Println("case VCMulticast")
 				if md.Get(util.DELIVER)[0] == util.TRUE {
 					nodes := VectorClockMulticast.GetNodes()
+					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+							if strArr[0] == nodes[i].MyConn.Connection.Target() {
 								nodes[i].AppendDeliverQueue(message)
 							}
 						}
@@ -188,9 +192,10 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					log.Println("deliver called for message: " + string(message.Message))
 				} else {
 					nodes := VectorClockMulticast.GetNodes()
+					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if string(message.Header) == nodes[i].MyConn.Connection.Target() {
+							if strArr[0] == nodes[i].MyConn.Connection.Target() {
 								nodes[i].ReceiveMessage(message)
 							}
 						}
