@@ -48,7 +48,7 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 						md[util.TYPEMC] = util.SQMULTICAST
 						md[util.TYPENODE] = util.SEQUENCER //a chi arriva
 						md[util.MESSAGEID] = SQMulticast.RandSeq(5)
-						localErr = connections[i].Send(md, []byte(""), mex.Message, nil, delay)
+						localErr = connections[i].Send(md, mex.Header, mex.Message, nil, delay)
 					}
 				}
 				if localErr != nil {
@@ -56,7 +56,7 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 				}
 			} else if multicastType == util.SCMULTICAST {
 				message := &MulticastScalarClock.MessageTimestamp{Address: port, OPacket: *mex, Timestamp: MulticastScalarClock.GetTimestamp(nodeId), Id: MulticastScalarClock.RandSeq(5)}
-				MulticastScalarClock.SendMessageToAll(message, nodeId, delay)
+				MulticastScalarClock.SendMessageToAll(mex.Header, message, nodeId, delay)
 
 			} else if multicastType == util.VCMULTICAST {
 				VectorClockMulticast.SendMessageToAll(mex, port, nodeId, delay)

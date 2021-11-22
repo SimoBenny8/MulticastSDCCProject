@@ -46,7 +46,7 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
-func SendMessageToAll(message *MessageTimestamp, nodeId uint, delay int) {
+func SendMessageToAll(header []byte, message *MessageTimestamp, nodeId uint, delay int) {
 
 	pos := checkPositionNode(nodeId)
 	var wg sync.WaitGroup
@@ -70,7 +70,7 @@ func SendMessageToAll(message *MessageTimestamp, nodeId uint, delay int) {
 		wg.Add(1)
 		ind := i
 		go func() {
-			err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()), b, nil, delay)
+			err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()+":"+string(header)), b, nil, delay)
 			//result := <-respChannel
 			//log.Println("ack: ", string(result))
 			if err != nil {
