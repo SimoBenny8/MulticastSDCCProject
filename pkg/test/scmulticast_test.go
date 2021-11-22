@@ -81,7 +81,7 @@ func TestOneToManySC(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			message := &MulticastScalarClock.MessageTimestamp{Address: uint(1), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node.NodeId), Id: MulticastScalarClock.RandSeq(5)}
-			MulticastScalarClock.SendMessageToAll(message, node.NodeId, delay)
+			MulticastScalarClock.SendMessageToAll([]byte(""), message, node.NodeId, delay)
 			wg.Done()
 		}()
 
@@ -167,19 +167,19 @@ func TestManyToManySC(t *testing.T) {
 		wg.Add(3)
 		go func() {
 			message := &MulticastScalarClock.MessageTimestamp{Address: uint(1), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node.NodeId), Id: MulticastScalarClock.RandSeq(100)}
-			MulticastScalarClock.SendMessageToAll(message, node.NodeId, delay)
+			MulticastScalarClock.SendMessageToAll([]byte(""), message, node.NodeId, delay)
 			wg.Done()
 		}()
 
 		go func() {
 			message := &MulticastScalarClock.MessageTimestamp{Address: uint(2), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node2.NodeId), Id: MulticastScalarClock.RandSeq(100)}
-			MulticastScalarClock.SendMessageToAll(message, node2.NodeId, delay)
+			MulticastScalarClock.SendMessageToAll([]byte(""), message, node2.NodeId, delay)
 			wg.Done()
 		}()
 
 		go func() {
 			message := &MulticastScalarClock.MessageTimestamp{Address: uint(3), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node3.NodeId), Id: MulticastScalarClock.RandSeq(100)}
-			MulticastScalarClock.SendMessageToAll(message, node3.NodeId, delay)
+			MulticastScalarClock.SendMessageToAll([]byte(""), message, node3.NodeId, delay)
 			wg.Done()
 		}()
 
