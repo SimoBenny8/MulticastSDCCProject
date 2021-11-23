@@ -25,7 +25,7 @@ func getDeliverQueue(c *gin.Context) {
 	mId := c.Param("mId")
 	group, ok := MulticastGroups[mId]
 	if !ok {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group" + mId + "not found"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Group" + mId + "not found"})
 	}
 	if group.Group.MulticastType == util.SCMULTICAST {
 		nodes := MulticastScalarClock.GetNodes()
@@ -39,6 +39,8 @@ func getDeliverQueue(c *gin.Context) {
 		nodes := SQMulticast.GetDeliverNodes()
 		deliverQueue := nodes[0]
 		c.IndentedJSON(http.StatusOK, gin.H{"deliverMessages": deliverQueue})
+	} else {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "Multicast" + mId + "not found"})
 	}
 }
 
@@ -176,7 +178,7 @@ func closeGroup(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group not found"})
 	}
 
-	pool.Pool.Message <- &rpc.Packet{Header: []byte("restApi:mId:" + mId), Message: []byte("closeGroup:" + group.Group.MulticastId)}
+	pool.Pool.Message <- &rpc.Packet{Header: []byte("closeGroup:mId:" + mId), Message: []byte("closeGroup:" + group.Group.MulticastId)}
 
 }
 

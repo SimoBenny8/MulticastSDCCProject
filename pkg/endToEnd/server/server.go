@@ -109,7 +109,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			Payload: message.Message,
 		}
 		group.Messages = append(group.Messages, msgh)
-	} else if strings.Contains(string(message.Message), "closeGroup") {
+	} else if strings.Contains(string(message.Header), "closeGroup") {
 		strArr := strings.SplitAfter(string(message.Message), ":")
 		mid := strArr[len(strArr)-1]
 		group := restApi.MulticastGroups[mid]
