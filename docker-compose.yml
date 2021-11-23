@@ -20,7 +20,7 @@ services:
       - APP=true
       - REGISTRY_ADDR=registry:90
       - NUM_THREADS=2
-      - DELAY=1
+      - DELAY=1000
       - VERBOSE=true
       - ID=0
     image:
@@ -36,7 +36,7 @@ services:
         - APP=true
         - REGISTRY_ADDR=registry:90
         - NUM_THREADS=2
-        - DELAY=1
+        - DELAY=1000
         - VERBOSE=true
         - ID=1
       image:
@@ -52,7 +52,7 @@ services:
         - APP=true
         - REGISTRY_ADDR=registry:90
         - NUM_THREADS=2
-        - DELAY=1
+        - DELAY=1000
         - VERBOSE=true
         - ID=2
       image:
