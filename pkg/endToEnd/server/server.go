@@ -98,7 +98,7 @@ func getNetListener(port uint) (net.Listener, error) {
 //implementation of service message
 func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.ResponsePacket, error) {
 	log.Println("Received Message: ", string(message.Message))
-	if strings.Contains(string(message.Header), "restApi") {
+	if strings.Contains(string(message.Header), "restApi") && !strings.Contains(string(message.Header), "closeGroup") {
 		strArr := strings.SplitAfter(string(message.Header), ":")
 		mid := strArr[len(strArr)-1]
 		group := restApi.MulticastGroups[mid]
@@ -109,7 +109,8 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 			Payload: message.Message,
 		}
 		group.Messages = append(group.Messages, msgh)
-	} else if strings.Contains(string(message.Header), "closeGroup") {
+	}
+	if strings.Contains(string(message.Header), "closeGroup") {
 		strArr := strings.SplitAfter(string(message.Message), ":")
 		mid := strArr[len(strArr)-1]
 		group := restApi.MulticastGroups[mid]
@@ -128,7 +129,6 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 		}
 		return &rpc.ResponsePacket{}, nil
 	}
-
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		if len(md) > 0 {
 			switch values := md.Get(util.TYPEMC); values[0] {
@@ -139,7 +139,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if strArr[0] == nodes[i].MyConn.Connection.Target() {
+							if strings.Contains(strArr[0], nodes[i].MyConn.Connection.Target()) {
 								nodes[i].AppendOrderedAck(message)
 							}
 						}
@@ -152,7 +152,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if strArr[0] == nodes[i].MyConn.Connection.Target() {
+							if strings.Contains(strArr[0], nodes[i].MyConn.Connection.Target()) {
 								nodes[i].AppendDeliverMessages(message)
 							}
 						}
@@ -165,7 +165,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if strArr[0] == nodes[i].MyConn.Connection.Target() {
+							if strings.Contains(strArr[0], nodes[i].MyConn.Connection.Target()) {
 								nodes[i].AddingReceivingMex(message)
 							}
 						}
@@ -201,7 +201,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if strArr[0] == nodes[i].MyConn.Connection.Target() {
+							if strings.Contains(strArr[0], nodes[i].MyConn.Connection.Target()) {
 								nodes[i].AppendDeliverQueue(message)
 							}
 						}
@@ -214,7 +214,7 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 					strArr := strings.SplitAfter(string(message.Header), ":")
 					if len(nodes) > 1 {
 						for i := range nodes {
-							if strArr[0] == nodes[i].MyConn.Connection.Target() {
+							if strings.Contains(strArr[0], nodes[i].MyConn.Connection.Target()) {
 								nodes[i].ReceiveMessage(message)
 							}
 						}
@@ -231,4 +231,5 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 		}
 	}
 	return &rpc.ResponsePacket{}, nil
+
 }

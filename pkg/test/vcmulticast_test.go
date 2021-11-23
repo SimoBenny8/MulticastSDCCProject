@@ -83,7 +83,7 @@ func TestOneToManyVC(t *testing.T) {
 		wg2.Wait()
 	}
 
-	time.Sleep(time.Second * 30)
+	time.Sleep(time.Second * 40)
 	nodes := VectorClockMulticast.GetNodes()
 	for i := range nodes {
 		assert.Equal(t, 3, len(nodes[i].DeliverQueue))
@@ -106,7 +106,8 @@ func TestManyToManyVC(t *testing.T) {
 	delay := 5
 	//port = 1
 	numNode := 3
-	messages := [][]byte{[]byte("message"), []byte("in"), []byte("order")}
+	messages := [][]byte{[]byte("M1"), []byte("M2"), []byte("M3")}
+	messages2 := [][]byte{[]byte("R:M1"), []byte("R:M2"), []byte("R:M3")}
 	connections = make([]*client2.Client, 3)
 	for i := 0; i < numNode; i++ {
 		connections[i] = testUtil.FakeConnect("Node" + strconv.Itoa(i))
@@ -154,33 +155,47 @@ func TestManyToManyVC(t *testing.T) {
 	VectorClockMulticast.AppendNodes(*node3, &wg)
 	go VectorClockMulticast.Deliver(node3.NodeId, delay)
 
-	for i := range messages {
-		wg2.Add(3)
-		go func() {
+	m1 := func(wg2 *sync.WaitGroup) {
+		for i := range messages {
 			m := &rpc.Packet{Message: messages[i]}
 			VectorClockMulticast.SendMessageToAll(m, 0, node.NodeId, delay)
-			wg2.Done()
-		}()
-
-		go func() {
-			m := &rpc.Packet{Message: messages[i]}
-			VectorClockMulticast.SendMessageToAll(m, 1, node2.NodeId, delay)
-			wg2.Done()
-		}()
-
-		go func() {
-			m := &rpc.Packet{Message: messages[i]}
-			VectorClockMulticast.SendMessageToAll(m, 2, node3.NodeId, delay)
-			wg2.Done()
-		}()
-
-		wg2.Wait()
+		}
+		wg2.Done()
 	}
 
-	time.Sleep(time.Second * 150)
+	m2 := func(wg2 *sync.WaitGroup) {
+		for {
+			if len(node2.DeliverQueue) > 0 && string(node2.DeliverQueue[0].OPacket.Message) == string(messages[0]) {
+				m := &rpc.Packet{Message: messages2[0]}
+				VectorClockMulticast.SendMessageToAll(m, 1, node2.NodeId, delay)
+				break
+			}
+		}
+		wg2.Done()
+	}
+
+	m3 := func(wg2 *sync.WaitGroup) {
+		for {
+
+			if len(node3.DeliverQueue) > 0 && string(node3.DeliverQueue[0].OPacket.Message) == string(messages[0]) {
+				m := &rpc.Packet{Message: messages2[1]}
+				VectorClockMulticast.SendMessageToAll(m, 2, node3.NodeId, delay)
+				break
+			}
+		}
+		wg2.Done()
+	}
+
+	wg2.Add(3)
+	go m1(&wg2)
+	go m2(&wg2)
+	go m3(&wg2)
+	wg2.Wait()
+
+	time.Sleep(time.Second * 200)
 	nodes := VectorClockMulticast.GetNodes()
 	for i := range nodes {
-		assert.Equal(t, 9, len(nodes[i].DeliverQueue))
+		assert.Equal(t, 5, len(nodes[i].DeliverQueue))
 		//assert.Equal(t, messages[0], nodes[i].DeliverQueue[0].OPacket.Message)
 		//assert.Equal(t, messages[1], nodes[i].DeliverQueue[1].OPacket.Message)
 		//assert.Equal(t, messages[2], nodes[i].DeliverQueue[2].OPacket.Message)

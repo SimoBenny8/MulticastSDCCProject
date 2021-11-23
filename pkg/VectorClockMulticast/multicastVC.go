@@ -182,7 +182,7 @@ func Deliver(nodeId uint, delay int) {
 			}
 			go func(wg *sync.Mutex) {
 				defer wg.Unlock()
-				LocalErr = Nodes[pos].MyConn.Send(md, []byte(Nodes[pos].MyConn.Connection.Target()), b, nil, delay)
+				LocalErr = Nodes[pos].MyConn.Send(md, []byte(Nodes[pos].MyConn.Connection.Target()+":"), b, nil, delay)
 				if LocalErr != nil {
 					log.Println(LocalErr.Error())
 					Nodes[pos].Timestamp[index] -= 1
