@@ -88,10 +88,10 @@ func TestOneToManySC(t *testing.T) {
 		wg.Wait()
 	}
 
-	time.Sleep(time.Second * 120)
+	time.Sleep(time.Second * 100)
 	nodes := MulticastScalarClock.GetNodes()
 	for i := range nodes {
-		assert.Equal(t, 1, len(nodes[i].ProcessingMessages))
+		assert.Equal(t, 2, len(nodes[i].DeliverQueue))
 	}
 	assert.Equal(t, nodes[0].DeliverQueue, nodes[1].DeliverQueue)
 	assert.Equal(t, nodes[1].DeliverQueue, nodes[2].DeliverQueue)
