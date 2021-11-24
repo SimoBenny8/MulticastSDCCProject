@@ -80,7 +80,7 @@ func removeForOtherTimestamps(slice []OtherTimestamp, s int) []OtherTimestamp {
 
 func EmptyOtherTimestamp(idMex string, nodeId uint) {
 	pos := checkPositionNode(nodeId)
-	for i := range Nodes[pos].OtherTs {
+	for i := 0; i < len(Nodes[pos].OtherTs); i++ {
 		if Nodes[pos].OtherTs[i].id == idMex {
 			Nodes[pos].OtherTs = removeForOtherTimestamps(Nodes[pos].OtherTs, i)
 			i--
@@ -96,7 +96,7 @@ func AppendNodes(node NodeSC) {
 
 func EmptyOrderedAck(idMex string, nodeId uint) { //svuota l'array
 	pos := checkPositionNode(nodeId)
-	for i := range Nodes[pos].OrderedAck {
+	for i := 0; i < len(Nodes[pos].OrderedAck); i++ {
 		if Nodes[pos].OrderedAck[i].Id == idMex {
 			Nodes[pos].OrderedAck = removeForMessageTimestamp(Nodes[pos].OrderedAck, i)
 			i--
