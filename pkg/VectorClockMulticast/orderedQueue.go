@@ -18,6 +18,10 @@ type NodeVC struct {
 	ProcessingMessage VectorMessages
 }
 
+func removeForProcessingMessages(slice VectorMessages, s int) VectorMessages {
+	return append(slice[:s], slice[s+1:]...)
+}
+
 func (node *NodeVC) AddToProcessingQueue(m *MessageVectorTimestamp, wg *sync.Mutex) {
 	defer wg.Unlock()
 	log.Println("messaggio aggiunto in coda")
@@ -27,10 +31,6 @@ func (node *NodeVC) AddToProcessingQueue(m *MessageVectorTimestamp, wg *sync.Mut
 func (node *NodeVC) Dequeue() MessageVectorTimestamp {
 	log.Println("prendo il primo elemento della coda")
 	m := node.ProcessingMessage[0]
-	if len(node.ProcessingMessage) > 1 {
-		node.ProcessingMessage = node.ProcessingMessage[1:]
-	} else {
-		node.ProcessingMessage = node.ProcessingMessage[:0]
-	}
+	node.ProcessingMessage = removeForProcessingMessages(node.ProcessingMessage, 0)
 	return m
 }
