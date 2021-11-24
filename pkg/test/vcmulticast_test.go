@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -90,9 +91,17 @@ func TestOneToManyVC(t *testing.T) {
 		assert.Equal(t, messages[0], nodes[i].DeliverQueue[0].OPacket.Message)
 		assert.Equal(t, messages[1], nodes[i].DeliverQueue[1].OPacket.Message)
 		assert.Equal(t, messages[2], nodes[i].DeliverQueue[2].OPacket.Message)
-
 	}
 
+}
+
+func getPositionMessage(slice VectorClockMulticast.VectorMessages, message []byte) int {
+	for i := 0; i < len(slice); i++ {
+		if strings.Contains(string(slice[i].OPacket.Message), string(message)) {
+			return i
+		}
+	}
+	return -1
 }
 
 func TestManyToManyVC(t *testing.T) {
@@ -157,49 +166,52 @@ func TestManyToManyVC(t *testing.T) {
 
 	m1 := func(wg2 *sync.WaitGroup) {
 		for i := range messages {
+			time.Sleep(time.Second * 2)
 			m := &rpc.Packet{Message: messages[i]}
 			VectorClockMulticast.SendMessageToAll(m, 0, node.NodeId, delay)
 		}
 		wg2.Done()
 	}
 
-	m2 := func(wg2 *sync.WaitGroup) {
+	m2 := func() {
 		for {
-			if len(node2.DeliverQueue) > 0 && string(node2.DeliverQueue[0].OPacket.Message) == string(messages[0]) {
+			nodes := VectorClockMulticast.GetNodes()
+			if len(nodes[1].DeliverQueue) > 0 {
 				m := &rpc.Packet{Message: messages2[0]}
 				VectorClockMulticast.SendMessageToAll(m, 1, node2.NodeId, delay)
 				break
 			}
 		}
-		wg2.Done()
 	}
 
-	m3 := func(wg2 *sync.WaitGroup) {
+	m3 := func() {
 		for {
-
-			if len(node3.DeliverQueue) > 0 && string(node3.DeliverQueue[0].OPacket.Message) == string(messages[0]) {
+			nodes := VectorClockMulticast.GetNodes()
+			if len(nodes[2].DeliverQueue) > 0 {
 				m := &rpc.Packet{Message: messages2[1]}
 				VectorClockMulticast.SendMessageToAll(m, 2, node3.NodeId, delay)
 				break
 			}
 		}
-		wg2.Done()
 	}
 
-	wg2.Add(3)
+	go m2()
+	go m3()
+
+	wg2.Add(1)
 	go m1(&wg2)
-	go m2(&wg2)
-	go m3(&wg2)
 	wg2.Wait()
 
-	time.Sleep(time.Second * 200)
+	time.Sleep(time.Second * 180)
 	nodes := VectorClockMulticast.GetNodes()
 	for i := range nodes {
 		assert.Equal(t, 5, len(nodes[i].DeliverQueue))
-		//assert.Equal(t, messages[0], nodes[i].DeliverQueue[0].OPacket.Message)
-		//assert.Equal(t, messages[1], nodes[i].DeliverQueue[1].OPacket.Message)
-		//assert.Equal(t, messages[2], nodes[i].DeliverQueue[2].OPacket.Message)
-
 	}
+	assert.True(t, getPositionMessage(nodes[0].DeliverQueue, messages[0]) < getPositionMessage(nodes[0].DeliverQueue, messages2[0]))
+	assert.True(t, getPositionMessage(nodes[1].DeliverQueue, messages[0]) < getPositionMessage(nodes[1].DeliverQueue, messages2[0]))
+	assert.True(t, getPositionMessage(nodes[2].DeliverQueue, messages[0]) < getPositionMessage(nodes[2].DeliverQueue, messages2[0]))
+	assert.True(t, getPositionMessage(nodes[0].DeliverQueue, messages2[0]) < getPositionMessage(nodes[0].DeliverQueue, messages2[1]))
+	assert.True(t, getPositionMessage(nodes[1].DeliverQueue, messages2[0]) < getPositionMessage(nodes[1].DeliverQueue, messages2[1]))
+	assert.True(t, getPositionMessage(nodes[2].DeliverQueue, messages2[0]) < getPositionMessage(nodes[2].DeliverQueue, messages2[1]))
 
 }
