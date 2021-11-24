@@ -1,6 +1,7 @@
 package MulticastScalarClock
 
 import (
+	"fmt"
 	"log"
 	"sort"
 	"sync"
@@ -33,5 +34,6 @@ func (node *NodeSC) Dequeue() MessageTimestamp {
 	log.Println("prendo il primo elemento della coda", node.NodeId)
 	m := node.ProcessingMessages[0]
 	node.ProcessingMessages = removeForProcessingMessages(node.ProcessingMessages, 0)
+	fmt.Println(node.ProcessingMessages)
 	return m
 }

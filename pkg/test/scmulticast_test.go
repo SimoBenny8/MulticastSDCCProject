@@ -23,7 +23,7 @@ func TestOneToManySC(t *testing.T) {
 	delay := 5
 	//port = 1
 	numNode := 3
-	messages := [][]byte{[]byte("message"), []byte("in"), []byte("order")}
+	messages := [][]byte{[]byte("message"), []byte("order")}
 	connections = make([]*client2.Client, 3)
 	for i := 0; i < numNode; i++ {
 		connections[i] = testUtil.FakeConnect("Node" + strconv.Itoa(i))
@@ -42,7 +42,7 @@ func TestOneToManySC(t *testing.T) {
 
 	MulticastScalarClock.AppendNodes(*node)
 
-	go MulticastScalarClock.Receive(uint(1), node.NodeId, delay)
+	go MulticastScalarClock.Receive(uint(0), node.NodeId, delay)
 	go MulticastScalarClock.Deliver(len(connections), node.NodeId, delay)
 
 	node2 := new(MulticastScalarClock.NodeSC)
@@ -58,7 +58,7 @@ func TestOneToManySC(t *testing.T) {
 
 	MulticastScalarClock.AppendNodes(*node2)
 
-	go MulticastScalarClock.Receive(uint(2), node2.NodeId, delay)
+	go MulticastScalarClock.Receive(uint(1), node2.NodeId, delay)
 	go MulticastScalarClock.Deliver(len(connections), node2.NodeId, delay)
 
 	node3 := new(MulticastScalarClock.NodeSC)
@@ -74,13 +74,13 @@ func TestOneToManySC(t *testing.T) {
 
 	MulticastScalarClock.AppendNodes(*node3)
 
-	go MulticastScalarClock.Receive(uint(3), node3.NodeId, delay)
+	go MulticastScalarClock.Receive(uint(2), node3.NodeId, delay)
 	go MulticastScalarClock.Deliver(len(connections), node3.NodeId, delay)
 
 	for i := range messages {
 		wg.Add(1)
 		go func() {
-			message := &MulticastScalarClock.MessageTimestamp{Address: uint(1), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node.NodeId), Id: MulticastScalarClock.RandSeq(5)}
+			message := &MulticastScalarClock.MessageTimestamp{Address: uint(0), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node.NodeId), Id: MulticastScalarClock.RandSeq(5)}
 			MulticastScalarClock.SendMessageToAll([]byte(""), message, node.NodeId, delay)
 			wg.Done()
 		}()
@@ -91,7 +91,7 @@ func TestOneToManySC(t *testing.T) {
 	time.Sleep(time.Second * 120)
 	nodes := MulticastScalarClock.GetNodes()
 	for i := range nodes {
-		assert.Equal(t, 3, len(nodes[i].DeliverQueue))
+		assert.Equal(t, 1, len(nodes[i].ProcessingMessages))
 	}
 	assert.Equal(t, nodes[0].DeliverQueue, nodes[1].DeliverQueue)
 	assert.Equal(t, nodes[1].DeliverQueue, nodes[2].DeliverQueue)
@@ -128,7 +128,7 @@ func TestManyToManySC(t *testing.T) {
 
 	MulticastScalarClock.AppendNodes(*node)
 
-	go MulticastScalarClock.Receive(uint(1), node.NodeId, delay)
+	go MulticastScalarClock.Receive(uint(0), node.NodeId, delay)
 	go MulticastScalarClock.Deliver(len(connections), node.NodeId, delay)
 
 	node2 := new(MulticastScalarClock.NodeSC)
@@ -144,7 +144,7 @@ func TestManyToManySC(t *testing.T) {
 
 	MulticastScalarClock.AppendNodes(*node2)
 
-	go MulticastScalarClock.Receive(uint(2), node2.NodeId, delay)
+	go MulticastScalarClock.Receive(uint(1), node2.NodeId, delay)
 	go MulticastScalarClock.Deliver(len(connections), node2.NodeId, delay)
 
 	node3 := new(MulticastScalarClock.NodeSC)
@@ -160,25 +160,25 @@ func TestManyToManySC(t *testing.T) {
 
 	MulticastScalarClock.AppendNodes(*node3)
 
-	go MulticastScalarClock.Receive(uint(3), node3.NodeId, delay)
+	go MulticastScalarClock.Receive(uint(2), node3.NodeId, delay)
 	go MulticastScalarClock.Deliver(len(connections), node3.NodeId, delay)
 
 	for i := range messages {
 		wg.Add(3)
 		go func() {
-			message := &MulticastScalarClock.MessageTimestamp{Address: uint(1), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node.NodeId), Id: MulticastScalarClock.RandSeq(100)}
+			message := &MulticastScalarClock.MessageTimestamp{Address: uint(0), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node.NodeId), Id: MulticastScalarClock.RandSeq(100)}
 			MulticastScalarClock.SendMessageToAll([]byte(""), message, node.NodeId, delay)
 			wg.Done()
 		}()
 
 		go func() {
-			message := &MulticastScalarClock.MessageTimestamp{Address: uint(2), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node2.NodeId), Id: MulticastScalarClock.RandSeq(100)}
+			message := &MulticastScalarClock.MessageTimestamp{Address: uint(1), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node2.NodeId), Id: MulticastScalarClock.RandSeq(100)}
 			MulticastScalarClock.SendMessageToAll([]byte(""), message, node2.NodeId, delay)
 			wg.Done()
 		}()
 
 		go func() {
-			message := &MulticastScalarClock.MessageTimestamp{Address: uint(3), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node3.NodeId), Id: MulticastScalarClock.RandSeq(100)}
+			message := &MulticastScalarClock.MessageTimestamp{Address: uint(2), OPacket: rpc.Packet{Message: messages[i]}, Timestamp: MulticastScalarClock.GetTimestamp(node3.NodeId), Id: MulticastScalarClock.RandSeq(100)}
 			MulticastScalarClock.SendMessageToAll([]byte(""), message, node3.NodeId, delay)
 			wg.Done()
 		}()
