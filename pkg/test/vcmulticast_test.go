@@ -188,6 +188,7 @@ func TestManyToManyVC(t *testing.T) {
 		for {
 			nodes := VectorClockMulticast.GetNodes()
 			if len(nodes[2].DeliverQueue) > 0 {
+				time.Sleep(time.Second)
 				m := &rpc.Packet{Message: messages2[1]}
 				VectorClockMulticast.SendMessageToAll(m, 2, node3.NodeId, delay)
 				break
@@ -202,7 +203,7 @@ func TestManyToManyVC(t *testing.T) {
 	go m1(&wg2)
 	wg2.Wait()
 
-	time.Sleep(time.Second * 180)
+	time.Sleep(time.Second * 150)
 	nodes := VectorClockMulticast.GetNodes()
 	for i := range nodes {
 		assert.Equal(t, 5, len(nodes[i].DeliverQueue))
