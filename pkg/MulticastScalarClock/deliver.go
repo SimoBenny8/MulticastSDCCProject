@@ -83,8 +83,6 @@ func EmptyOtherTimestamp(idMex string, nodeId uint) {
 	for i := range Nodes[pos].OtherTs {
 		if Nodes[pos].OtherTs[i].id == idMex {
 			Nodes[pos].OtherTs = removeForOtherTimestamps(Nodes[pos].OtherTs, i)
-			break
-
 		}
 	}
 
@@ -100,7 +98,6 @@ func EmptyOrderedAck(idMex string, nodeId uint) { //svuota l'array
 	for i := range Nodes[pos].OrderedAck {
 		if Nodes[pos].OrderedAck[i].Id == idMex {
 			Nodes[pos].OrderedAck = removeForMessageTimestamp(Nodes[pos].OrderedAck, i)
-			break
 		}
 	}
 	return
