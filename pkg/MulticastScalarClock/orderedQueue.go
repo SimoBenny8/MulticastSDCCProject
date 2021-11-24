@@ -26,6 +26,7 @@ func (node *NodeSC) AddToQueue(m *MessageTimestamp, wg *sync.Mutex) {
 	log.Println("messaggio aggiunto in coda", node.NodeId)
 	node.ProcessingMessages = append(node.ProcessingMessages, *m)
 	node.ProcessingMessages = node.OrderingMessage(node.ProcessingMessages)
+	log.Println("coda Ordinata", node.ProcessingMessages, ":", node.NodeId)
 	wg.Unlock()
 }
 
