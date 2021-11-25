@@ -101,14 +101,12 @@ func TestOneToManySC(t *testing.T) {
 }
 
 func TestManyToManySC(t *testing.T) {
-	//rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
 
 	var connections []*client2.Client
 	var wg sync.WaitGroup
-	//var port uint
 
 	delay := 5
-	//port = 1
 	numNode := 3
 	messages := [][]byte{[]byte("message"), []byte("in"), []byte("order")}
 	connections = make([]*client2.Client, 3)

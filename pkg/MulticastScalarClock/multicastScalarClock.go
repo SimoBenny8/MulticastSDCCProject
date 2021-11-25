@@ -71,8 +71,6 @@ func SendMessageToAll(header []byte, message *MessageTimestamp, nodeId uint, del
 		ind := i
 		go func() {
 			err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()+":"+string(header)), b, nil, delay)
-			//result := <-respChannel
-			//log.Println("ack: ", string(result))
 			if err != nil {
 				log.Fatal("error during send message")
 			}
