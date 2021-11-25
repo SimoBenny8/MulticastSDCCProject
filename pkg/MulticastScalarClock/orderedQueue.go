@@ -13,20 +13,17 @@ func (a OrderedMessages) Less(i, j int) bool { return a[i].Timestamp < a[j].Time
 func (a OrderedMessages) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 //func che ordina i messaggi in coda
-func (node *NodeSC) OrderingMessage(messages []MessageTimestamp) OrderedMessages {
-	log.Println("riordino i messaggi")
+func (node *NodeSC) OrderingMessage() {
 	sort.Sort(node.ProcessingMessages)
-	return messages
+	log.Println("ordering messages", node.ProcessingMessages[0].Timestamp)
+	return
 }
-
-// Create
 
 func (node *NodeSC) AddToQueue(m *MessageTimestamp, wg *sync.Mutex) {
 
 	log.Println("messaggio aggiunto in coda", node.NodeId)
 	node.ProcessingMessages = append(node.ProcessingMessages, *m)
-	node.ProcessingMessages = node.OrderingMessage(node.ProcessingMessages)
-	log.Println("coda Ordinata", node.ProcessingMessages, ":", node.NodeId)
+	node.OrderingMessage()
 	wg.Unlock()
 }
 
