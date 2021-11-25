@@ -19,6 +19,7 @@ func GetNodes() []NodeVC {
 	return Nodes
 }
 
+//function that return the position of a node in the array
 func checkPositionNode(id uint) int {
 	nodes := GetNodes()
 	for i := range nodes {
@@ -38,6 +39,5 @@ func (node *NodeVC) AppendDeliverQueue(mex *rpc.Packet) {
 	var wg sync.Mutex
 	wg.Lock()
 	m := DecodeMsg(mex, &wg)
-	//pos := checkPositionNode(nodeId)
 	node.DeliverQueue = append(node.DeliverQueue, *m)
 }

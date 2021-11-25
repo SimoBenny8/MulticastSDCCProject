@@ -28,7 +28,6 @@ var (
 )
 
 func (node *NodeSC) AddingReceivingMex(mex *rpc.Packet) {
-	//pos := checkPositionNode(nodeId)
 	m := DecodeMsg(mex)
 	node.ReceivedMessage = append(node.ReceivedMessage, *m)
 }
@@ -38,6 +37,7 @@ func GetTimestamp(nodeId uint) int {
 	return Nodes[pos].Timestamp
 }
 
+//function used to get a random sequence for message ID
 func RandSeq(n int) string {
 	b := make([]rune, n)
 	for i := range b {
@@ -46,6 +46,7 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
+//Send message in multicast
 func SendMessageToAll(header []byte, message *MessageTimestamp, nodeId uint, delay int) {
 
 	pos := checkPositionNode(nodeId)
@@ -59,7 +60,6 @@ func SendMessageToAll(header []byte, message *MessageTimestamp, nodeId uint, del
 		return
 	}
 
-	//respChannel = make(chan []byte,1)
 	md := make(map[string]string)
 	md[util.TYPEMC] = util.SCMULTICAST
 	md[util.ACK] = util.FALSE
@@ -81,17 +81,17 @@ func SendMessageToAll(header []byte, message *MessageTimestamp, nodeId uint, del
 	wg.Wait()
 }
 
+//function used to unmarshal a received message
 func DecodeMsg(message *rpc.Packet) *MessageTimestamp {
 	// Decode (receive) the value.
 	var m MessageTimestamp
-	log.Println("decodifica del messaggio")
 	var err error
 
 	message.Message = bytes.TrimPrefix(message.Message, []byte("\xef\xbb\xbf"))
 	if err = json.Unmarshal(message.Message, &m); err != nil {
 		panic(err)
 	}
-	log.Println("messaggio codificato: ", string(m.OPacket.Message))
+	log.Println("decoded messages: ", string(m.OPacket.Message))
 	if err != nil {
 		log.Fatal("decode error:", err)
 	}
@@ -99,6 +99,7 @@ func DecodeMsg(message *rpc.Packet) *MessageTimestamp {
 
 }
 
+//function that checks that the message that has to be delivered, has minimum timestamp
 func HasMinimumTimestamp(message *MessageTimestamp, nodeId uint) bool {
 	var count int
 	pos := checkPositionNode(nodeId)
@@ -115,6 +116,7 @@ func HasMinimumTimestamp(message *MessageTimestamp, nodeId uint) bool {
 	return false
 }
 
+//function that checks if a message has to be delivered
 func Deliver(numConn int, nodeId uint, delay int) {
 	rand.Seed(time.Now().UnixNano())
 	pos := checkPositionNode(nodeId)
@@ -152,10 +154,10 @@ func Deliver(numConn int, nodeId uint, delay int) {
 
 }
 
+//function that manage a received message
 func Receive(addr uint, nodeId uint, delay int) {
 	var tInQueue int
 	pos := checkPositionNode(nodeId)
-	//log.Println("Ecco la posizione:",pos)
 	for {
 		if len(Nodes[pos].ReceivedMessage) > 0 {
 			var wg sync.WaitGroup
@@ -203,6 +205,7 @@ func Receive(addr uint, nodeId uint, delay int) {
 	}
 }
 
+//function that checks if all ack of a message has arrived
 func IsCorrectNumberAck(message *MessageTimestamp, numCon int, nodeId uint) bool {
 	i := 0
 	pos := checkPositionNode(nodeId)
@@ -213,15 +216,8 @@ func IsCorrectNumberAck(message *MessageTimestamp, numCon int, nodeId uint) bool
 	}
 
 	if i == numCon {
-		//log.Println("raggiunto numero di ack corretto")
 		return true
 
 	}
 	return false
 }
-
-/* Workflow:
- 1) Invio messaggio in multicast da parte di Pi
-2) Pj, che riceve il messaggio, lo mette in coda e riordina la coda in base al timestamp (incrementare prima di inviare)
-3) Pj invia un messaggio di ack in multicast
-4) Pj effettua la deliver se msg è in testa e nessun processo ha messaggio con timestamp minore o uguale in coda */

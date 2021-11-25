@@ -44,10 +44,10 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 			if multicastType == util.SQMULTICAST {
 				for i := range connections {
 					if connections[i].Connection.Target() == seq.SeqPort.Connection.Target() {
-						//caso invio al sequencer da un nodo generico
+						//send to a sequencer
 						md := make(map[string]string)
 						md[util.TYPEMC] = util.SQMULTICAST
-						md[util.TYPENODE] = util.SEQUENCER //a chi arriva
+						md[util.TYPENODE] = util.SEQUENCER //receiver
 						md[util.MESSAGEID] = SQMulticast.RandSeq(5)
 						localErr = connections[i].Send(md, mex.Header, mex.Message, nil, delay)
 					}
@@ -68,7 +68,7 @@ func getMessages(chanMex chan *rpc.Packet, multicastType string, connections []*
 					md[util.TYPEMC] = util.BMULTICAST
 					localErr = connections[i].Send(md, mex.Header, mex.Message, respChannel, delay)
 					result := <-respChannel
-					fmt.Println(string(result)) //problema ack implosion
+					fmt.Println(string(result))
 				}
 				if localErr != nil {
 					log.Println("Error in sending to node")

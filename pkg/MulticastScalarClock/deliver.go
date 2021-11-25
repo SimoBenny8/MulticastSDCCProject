@@ -36,15 +36,18 @@ func GetNodes() []NodeSC {
 	return Nodes
 }
 
+func AppendNodes(node NodeSC) {
+	Nodes = append(Nodes, node)
+
+}
+
 func (node *NodeSC) AppendDeliverMessages(mex *rpc.Packet) {
 	m := DecodeMsg(mex)
-	//pos := checkPositionNode(nodeId)
 	node.DeliverQueue = append(node.DeliverQueue, *m)
 }
 
 func (node *NodeSC) AppendOrderedAck(ack *rpc.Packet) {
 	m := DecodeMsg(ack)
-	//pos := checkPositionNode(nodeId)
 	node.OrderedAck = append(node.OrderedAck, *m)
 	node.OtherTs = append(node.OtherTs, OtherTimestamp{
 		id:                 m.Id,
@@ -53,6 +56,7 @@ func (node *NodeSC) AppendOrderedAck(ack *rpc.Packet) {
 	return
 }
 
+//Function that return the array position of the node
 func checkPositionNode(id uint) int {
 	for i := range Nodes {
 		if Nodes[i].NodeId == id {
@@ -61,6 +65,8 @@ func checkPositionNode(id uint) int {
 	}
 	return -1
 }
+
+//Functions used to remove message from queue (also ACK and other Struct)
 
 func removeForReceivedMessage(slice OrderedMessages, s int) OrderedMessages {
 	return append(slice[:s], slice[s+1:]...)
@@ -89,12 +95,7 @@ func EmptyOtherTimestamp(idMex string, nodeId uint) {
 
 }
 
-func AppendNodes(node NodeSC) {
-	Nodes = append(Nodes, node)
-
-}
-
-func EmptyOrderedAck(idMex string, nodeId uint) { //svuota l'array
+func EmptyOrderedAck(idMex string, nodeId uint) {
 	pos := checkPositionNode(nodeId)
 	for i := 0; i < len(Nodes[pos].OrderedAck); i++ {
 		if Nodes[pos].OrderedAck[i].Id == idMex {

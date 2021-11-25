@@ -24,9 +24,7 @@ func main() {
 	registryAddr := flag.String("registryAddr", "registry:90", "service registry address")
 	r := flag.Bool("registry", util.GetEnvBoolWithDefault("REGISTRY", false), "start multicast registry")
 	application := flag.Bool("application", util.GetEnvBoolWithDefault("APP", false), "start multicast application")
-	//myId := flag.Int("id", util.GetEnvIntWithDefault("ID", 0), "number id of member")
 
-	//utils.Myid = *myId
 	flag.Parse()
 	services := make([]func(registrar grpc.ServiceRegistrar) error, 0)
 
@@ -88,25 +86,5 @@ func main() {
 	select {
 	case <-wgChan:
 	}
-
-	//seleziono il nodo che effettuerà il multicasting
-	//salvo l'interfaccia della procedura grpc
-	//utilizzo l'interfaccia per mandare i messaggi
-
-	//numNodes := 3
-	//per avere un buon grado di reliability posso utilizzare waitgroup che mi permette di attendere che il messaggio
-	//sia consegnato a livello applicativo
-	//posso utilizzare i canali, un canale fittizio true e uno di errore per sapere quando si riceve un errore che tipo
-	//di errore si è ricevuto (o altri metodi)
-	//wg := sync.WaitGroup{}
-	//wg.Add(1)
-	//for i := 0; i < numNodes; i++ {
-	//	go func() {
-	//	err :=   funzione BMulticast(..)
-	//response chann : posso aspettarmi il  canale di risposta da ricordare che è un semaforo e deve consumarsi
-	//deve essere letto
-	//	}()
-	//reliability : attendo l'ack
-	//wg.Done() solo quando ho finito di attendere la chiamata
 
 }

@@ -30,6 +30,7 @@ var (
 	seq     Sequencer
 )
 
+//function that return a random sequence
 func RandSeq(n int) string {
 	b := make([]rune, n)
 	for i := range b {
@@ -50,6 +51,7 @@ func (s *Sequencer) UpdateTimestamp() {
 	s.LocalTimestamp += 1
 }
 
+//Manage a message received by sequencer
 func ReceiveMessageToSequencer(mex *rpc.Packet, id string) {
 	var wg sync.Mutex
 	seq.UpdateTimestamp()
@@ -65,24 +67,22 @@ func (s *Sequencer) addMessageSeq(wg *sync.Mutex, mex *MessageSeq) {
 	s.MessageQueue = append(s.MessageQueue, *mex)
 }
 
+//Function that send a message from Sequencer to a Node
 func DeliverSeq(delay int) {
 	rand.Seed(time.Now().UnixNano())
 	var wg sync.WaitGroup
 	for {
-		//log.Println("esecuzione deliver")
 		if len(seq.MessageQueue) > 0 {
-			log.Println("sto nella coda")
 			message := seq.MessageQueue[0]
 			seq.MessageQueue = seq.MessageQueue[1:]
 			for i := range seq.Connections {
 				wg.Add(1)
-				//caso invio al sequencer da un nodo generico
 				i := i
 				go func() {
 					defer wg.Done()
 					md := make(map[string]string)
 					md[util.TYPEMC] = util.SQMULTICAST
-					md[util.TYPENODE] = util.MEMBER //a chi arriva
+					md[util.TYPENODE] = util.MEMBER
 					md[util.MESSAGEID] = message.Id
 					md[util.RECEIVER] = seq.Connections[i].Connection.Target()
 					seq.LocalErr = seq.Connections[i].Send(md, []byte(""), message.Message.Message, nil, delay)

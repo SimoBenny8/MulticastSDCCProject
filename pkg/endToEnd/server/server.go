@@ -16,7 +16,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type Server struct {
@@ -31,12 +30,13 @@ func NewServer() *Server {
 	return &Server{}
 }
 
+//Register a service
 func Register(s grpc.ServiceRegistrar) (err error) {
 	rpc.RegisterPacketServiceServer(s, NewServer())
 	return
 }
 
-// RunServer runs gRPC service to publish OPacket service
+// RunServer runs gRPC service to publish sendPacket service
 func RunServer(port uint, gServices ...func(grpc.ServiceRegistrar) error) error {
 
 	netListener, err := getNetListener(port)
@@ -53,8 +53,6 @@ func RunServer(port uint, gServices ...func(grpc.ServiceRegistrar) error) error 
 		}
 	}
 
-	//svr := NewServer()
-	//rpc.RegisterPacketServiceServer(server, svr)
 	// start the server
 	err = server.Serve(netListener)
 	if err != nil {
@@ -65,27 +63,7 @@ func RunServer(port uint, gServices ...func(grpc.ServiceRegistrar) error) error 
 	return err
 }
 
-func RunServerWithWaitGroup(port uint, wg *sync.WaitGroup) error {
-
-	netListener, err := getNetListener(port)
-	if err == nil {
-		log.Println("Succed to listen : ", port)
-	}
-	// register service
-	server := grpc.NewServer()
-	svr := NewServer()
-	rpc.RegisterPacketServiceServer(server, svr)
-	// start the server
-	err = server.Serve(netListener)
-	if err != nil {
-		log.Fatalf("failed to serve: %s", err)
-	} else {
-		log.Println("server connected")
-	}
-	wg.Done()
-	return err
-}
-
+//Listener to a Net Port
 func getNetListener(port uint) (net.Listener, error) {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -95,7 +73,7 @@ func getNetListener(port uint) (net.Listener, error) {
 	return lis, err
 }
 
-//implementation of service message
+//Implementation of service message
 func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.ResponsePacket, error) {
 	log.Println("Received Message: ", string(message.Message))
 	if strings.Contains(string(message.Header), "restApi") && !strings.Contains(string(message.Header), "closeGroup") {

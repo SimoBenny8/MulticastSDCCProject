@@ -20,7 +20,7 @@ type RegistryServer struct {
 
 var (
 	groups   map[string]*MulticastGroup
-	Mugroups sync.RWMutex
+	MuGroups sync.RWMutex
 )
 
 type MulticastGroup struct {
@@ -35,7 +35,7 @@ func init() {
 // Registration of the node in a specific group
 func (s *RegistryServer) Register(ctx context.Context, in *proto.RegInfo) (*proto.RegAnswer, error) {
 
-	log.Println("Starting register service ")
+	log.Println("Starting register service")
 	c, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	source, ok := peer.FromContext(c)
@@ -46,11 +46,10 @@ func (s *RegistryServer) Register(ctx context.Context, in *proto.RegInfo) (*prot
 	srcAddr := src[:strings.LastIndexByte(src, ':')]
 
 	srcAddr = fmt.Sprintf("%s:%d", srcAddr, in.Port)
-	//utils.MyAdress = srcAddr
-	log.Println("Registration of the group ", in.MulticastId, "with client", srcAddr)
+	log.Println("Registration of the group:", in.MulticastId, "with client address:", srcAddr)
 	multicastId := in.MulticastId
-	Mugroups.Lock()
-	defer Mugroups.Unlock()
+	MuGroups.Lock()
+	defer MuGroups.Unlock()
 	// Checking if the group already exists
 	multicastGroup, exists := groups[multicastId]
 
@@ -92,12 +91,12 @@ func (s *RegistryServer) Register(ctx context.Context, in *proto.RegInfo) (*prot
 func (s *RegistryServer) StartGroup(ctx context.Context, in *proto.RequestData) (*proto.Group, error) {
 	_, ok := peer.FromContext(ctx)
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "Missing source address")
+		return nil, status.Errorf(codes.InvalidArgument, "Missing address")
 	}
 	multicastId := in.MulticastId
 	clientId := in.ClientId
-	Mugroups.RLock()
-	defer Mugroups.RUnlock()
+	MuGroups.RLock()
+	defer MuGroups.RUnlock()
 	// Checking if the group exists
 	mGroup, ok := groups[multicastId]
 	if !ok {
@@ -119,12 +118,12 @@ func (s *RegistryServer) Ready(ctx context.Context, in *proto.RequestData) (*pro
 	var member *proto.MemberInfo
 	_, ok := peer.FromContext(ctx)
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "Missing source address")
+		return nil, status.Errorf(codes.InvalidArgument, "Missing address")
 	}
 	multicastId := in.MulticastId
 	clientId := in.ClientId
-	Mugroups.RLock()
-	defer Mugroups.RUnlock()
+	MuGroups.RLock()
+	defer MuGroups.RUnlock()
 
 	mGroup, ok := groups[multicastId]
 	if !ok {
@@ -157,14 +156,14 @@ func (s *RegistryServer) CloseGroup(ctx context.Context, in *proto.RequestData) 
 	log.Println("src address closing group", src)
 
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "Missing source address")
+		return nil, status.Errorf(codes.InvalidArgument, "Missing address")
 	}
 
 	multicastId := in.MulticastId
 	clientId := in.ClientId
 
-	Mugroups.RLock()
-	defer Mugroups.RUnlock()
+	MuGroups.RLock()
+	defer MuGroups.RUnlock()
 
 	mGroup, ok := groups[multicastId]
 
@@ -209,11 +208,11 @@ func (s *RegistryServer) GetStatus(ctx context.Context, in *proto.MulticastId) (
 	_, ok := peer.FromContext(ctx)
 
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "Missing source address")
+		return nil, status.Errorf(codes.InvalidArgument, "Missing address")
 	}
 
-	Mugroups.RLock()
-	defer Mugroups.RUnlock()
+	MuGroups.RLock()
+	defer MuGroups.RUnlock()
 
 	mGroup, ok := groups[in.MulticastId]
 	if !ok {
