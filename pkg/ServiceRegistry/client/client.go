@@ -6,9 +6,8 @@ import (
 	"log"
 )
 
+//function used to connect a node to the server registry
 func Connect(address string) (proto.RegistryClient, error) {
-
-	log.Println("Connecting to registry: ", address)
 
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {

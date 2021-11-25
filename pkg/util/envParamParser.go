@@ -8,7 +8,9 @@ import (
 	"strings"
 )
 
-// GetEnvStr return value of env variable. Not null error returned if env variable is empty string
+/*This functions parse the environmental variables of Docker*/
+
+//GetEnvStr return value of env variable
 func GetEnvString(key string) (string, error) {
 	isValid := ValidateKeyName(key)
 	if isValid == false {
@@ -23,7 +25,7 @@ func GetEnvString(key string) (string, error) {
 	return v, nil
 }
 
-// GetEnvInt return value of env variable. Value will be set to 0 and error will be returned if env variable failed to parse
+// GetEnvInt return value of env variable.
 func GetEnvInt(key string) (int, error) {
 	s, err := GetEnvString(key)
 	if err != nil {
@@ -38,7 +40,7 @@ func GetEnvInt(key string) (int, error) {
 	return v, err
 }
 
-// GetEnvBool return value of env variable. Value will be set to false and error will be returned if env variable failed to parse
+// GetEnvBool return value of env variable.
 func GetEnvBool(key string) (bool, error) {
 	s, err := GetEnvString(key)
 	if err != nil {
@@ -84,7 +86,6 @@ var pattern = "^[a-zA-Z_]+[a-zA-Z0-9_]*$"
 var IsLetter = regexp.MustCompile(pattern).MatchString
 
 // ValidateKeyName must ensure env variable name only contain alphanumeric + underscore
-// return true if env variable name is valid otherwise return false
 func ValidateKeyName(key string) bool {
 	result := IsLetter(key)
 	return result

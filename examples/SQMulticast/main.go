@@ -57,8 +57,6 @@ func main() {
 
 	n := rand.Intn(len(connections))
 
-	//node.Connections = connections
-
 	node := new(SQMulticast.NodeForSq)
 	node.NodeId = uint(rand.Intn(5))
 	node.Connections = connections

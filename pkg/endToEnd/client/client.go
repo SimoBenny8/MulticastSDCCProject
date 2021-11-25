@@ -16,17 +16,16 @@ type Client struct {
 	Connection *grpc.ClientConn
 }
 
-//connect with delay
+//create connection between nodes
 func Connect(address string) *Client {
-
-	//go time.Sleep(time.Duration(rand.Intn(1700) + 5))
-
+	d := rand.Intn(1000) + 1000
+	time.Sleep(time.Duration(d) * time.Millisecond)
 	opts := grpc.WithInsecure()
 	cc, err := grpc.Dial(address, opts)
 	if err != nil {
 		log.Println(err.Error())
 	}
-	log.Println("connection state ====> ", cc.GetState(), "connected client ", cc.Target())
+	log.Println("Connected client: ", cc.Target())
 	c := new(Client)
 	c.Client = rpc.NewPacketServiceClient(cc)
 	c.Connection = cc
@@ -69,20 +68,4 @@ func delay(wg *sync.Mutex, value int) {
 	d := rand.Intn(value) + 1000
 	time.Sleep(time.Duration(d) * time.Millisecond)
 	defer wg.Unlock()
-}
-
-//connect with delay
-func ConnectWithWaitGroup(address string, wg *sync.WaitGroup) *Client {
-
-	opts := grpc.WithInsecure()
-	cc, err := grpc.Dial(address, opts)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	log.Println("connection state ====> ", cc.GetState(), "connected client ", cc.Target())
-	c := new(Client)
-	c.Client = rpc.NewPacketServiceClient(cc)
-	c.Connection = cc
-	wg.Done()
-	return &Client{c.Client, c.Connection}
 }

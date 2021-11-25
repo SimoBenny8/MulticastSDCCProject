@@ -42,6 +42,7 @@ func main() {
 
 	connections = make([]*client.Client, len(groupArray))
 
+	//connection nodes
 	for i := range groupArray {
 		connections[i] = client.Connect("localhost:" + groupArray[i])
 	}
@@ -49,6 +50,7 @@ func main() {
 	respChannel := make(chan []byte, 1)
 	pool.Pool.InitThreadPool(connections, 5, util.BMULTICAST, respChannel, *port, 0, int(*delay))
 
+	//get message from stdin
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Insert message: ")
 	for scanner.Scan() {

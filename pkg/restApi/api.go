@@ -17,6 +17,8 @@ import (
 	"time"
 )
 
+/* Here there are implementations of the rest Api*/
+
 type routes struct {
 	router *gin.Engine
 }
@@ -167,7 +169,6 @@ func sendMessage(c *gin.Context) {
 }
 
 func closeGroup(c *gin.Context) {
-	//context_, _ := context.WithTimeout(c, time.Second)
 	mId := c.Param("mId")
 	GMu.RLock()
 	defer GMu.RUnlock()

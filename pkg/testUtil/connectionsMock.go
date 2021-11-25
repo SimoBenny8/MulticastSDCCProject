@@ -32,6 +32,7 @@ func bufDialer(context.Context, string) (net.Conn, error) {
 	return lis.Dial()
 }
 
+//Creates a BufCon connection between nodes
 func FakeConnect(address string) *client2.Client {
 	ctx := context.Background()
 
@@ -39,7 +40,6 @@ func FakeConnect(address string) *client2.Client {
 	if err != nil {
 		log.Println(err.Error())
 	}
-	//log.Println("connection state ====> ", cc.GetState(), "connected client ", cc.Target())
 	c := new(client2.Client)
 	c.Client = rpc.NewPacketServiceClient(cc)
 	c.Connection = cc

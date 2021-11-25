@@ -24,6 +24,7 @@ type MessageVectorTimestamp struct {
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+//Initialize timestamp of a node
 func (node *NodeVC) InitLocalTimestamp(wg *sync.Mutex, numNode int) {
 	node.Timestamp = make([]int, numNode)
 	for i := range node.Timestamp {
@@ -40,6 +41,7 @@ func RandSeq(n int) string {
 	return string(b)
 }
 
+//function that send a message in multicast
 func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 
 	pos := checkPositionNode(nodeId)
@@ -47,7 +49,6 @@ func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 	Nodes[pos].Timestamp[Nodes[pos].MyNode] += 1
 
 	mex := &MessageVectorTimestamp{Address: port, OPacket: *m, Timestamp: Nodes[pos].Timestamp, Id: RandSeq(5)}
-	//log.Println("Receiver:", md[util.RECEIVER])
 	b, err := json.Marshal(&mex)
 	if err != nil {
 		log.Printf("Error marshalling: %s", err)
@@ -66,8 +67,6 @@ func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 
 		go func() {
 			err = Nodes[pos].Connections[ind].Send(md, []byte(Nodes[pos].Connections[ind].Connection.Target()+":"+string(m.Header)), b, nil, delay)
-			//result := <-respChannel
-			//log.Println("ack: ", string(result))
 			if err != nil {
 				log.Fatal("error during send message")
 			}
@@ -78,13 +77,11 @@ func SendMessageToAll(m *rpc.Packet, port uint, nodeId uint, delay int) {
 	wg.Wait()
 }
 
+//function that manages a received message
 func (node *NodeVC) ReceiveMessage(message *rpc.Packet) {
-	//var err error
-	//pos := checkPositionNode(nodeId)
 	var wg sync.Mutex
 	wg.Lock()
 	mt := DecodeMsg(message, &wg)
-	//messageT := *mt
 
 	log.Println("Original Message: ", string(mt.OPacket.Message), "Timestamp: ", mt.Timestamp)
 	wg.Lock()
@@ -92,12 +89,12 @@ func (node *NodeVC) ReceiveMessage(message *rpc.Packet) {
 
 }
 
+//function that unmarshal a received message from gRPC
 func DecodeMsg(message *rpc.Packet, wg *sync.Mutex) *MessageVectorTimestamp {
-	// Decode (receive) the value.
 	defer wg.Unlock()
 	var m MessageVectorTimestamp
-	log.Println("decodifica del messaggio")
 	var err error
+
 	message.Message = bytes.TrimPrefix(message.Message, []byte("\xef\xbb\xbf"))
 	err = json.Unmarshal(message.Message, &m)
 	if err != nil {
@@ -106,7 +103,7 @@ func DecodeMsg(message *rpc.Packet, wg *sync.Mutex) *MessageVectorTimestamp {
 			log.Printf("syntax error at byte offset %d", e.Offset)
 		}
 	}
-	log.Println("messaggio codificato: ", string(m.OPacket.Message))
+	log.Println("decoded message: ", string(m.OPacket.Message))
 	if err != nil {
 		log.Fatal("decode error:", err)
 	}
@@ -114,13 +111,14 @@ func DecodeMsg(message *rpc.Packet, wg *sync.Mutex) *MessageVectorTimestamp {
 
 }
 
+//Checks if a node read almost the same amount of other node's message
 func HasSameNumberMessage(mex *MessageVectorTimestamp, nodeId uint) bool {
 	pos := checkPositionNode(nodeId)
 	resp := false
 	for i := range Nodes[pos].Connections {
 		if i != int(Nodes[pos].MyNode) {
 			if mex.Timestamp[i] <= Nodes[pos].Timestamp[i] {
-				log.Println("mex: ", mex.Timestamp[i], " local: ", Nodes[pos].Timestamp[i])
+				log.Println("message timestamp: ", mex.Timestamp[i], " local timestamp: ", Nodes[pos].Timestamp[i])
 				resp = true
 			}
 		}
@@ -128,6 +126,7 @@ func HasSameNumberMessage(mex *MessageVectorTimestamp, nodeId uint) bool {
 	return resp
 }
 
+//function that return the index of a node
 func indexSender(mex *MessageVectorTimestamp, nodeId uint) int {
 	pos := checkPositionNode(nodeId)
 	var index int
@@ -140,19 +139,20 @@ func indexSender(mex *MessageVectorTimestamp, nodeId uint) int {
 	return index
 }
 
+//Checks if the message that has to be delivered is the next
 func nextMessageTimestamp(mex *MessageVectorTimestamp, nodeId uint) bool {
 	pos := checkPositionNode(nodeId)
 	index := indexSender(mex, nodeId)
 	if mex.Timestamp[index] == (Nodes[pos].Timestamp[index] + 1) {
-		log.Println("next message timestamp 1: ", mex.Timestamp[index], " 2: ", Nodes[pos].Timestamp[index]+1)
 		return true
 	} else if index == int(Nodes[pos].MyNode) {
-		//caso deliver stesso nodo
+		//case receiver == sender
 		return true
 	}
 	return false
 }
 
+//Deliver the message to application level
 func Deliver(nodeId uint, delay int) {
 	rand.Seed(time.Now().UnixNano())
 	pos := checkPositionNode(nodeId)
@@ -172,7 +172,6 @@ func Deliver(nodeId uint, delay int) {
 			index := indexSender(&message, Nodes[pos].NodeId)
 			for i := range message.Timestamp {
 				Nodes[pos].Timestamp[i] = int(math.Max(float64(message.Timestamp[i]), float64(Nodes[pos].Timestamp[i])))
-				//log.Println("timestamp locale: ", localTimestamp)
 			}
 			Nodes[pos].Timestamp[index] += 1
 			b, err := json.Marshal(&message)

@@ -71,7 +71,7 @@ var (
 	Delay           uint
 	MulticastGroups map[string]*MulticastGroup
 	GrpcPort        uint
-	Application     bool
+	NumThread       int
 )
 
 func init() {
@@ -81,12 +81,16 @@ func init() {
 func Run(grpcP uint, restPort uint, registryAddr, relativePath string, numThreads int, dl uint, debug bool) error {
 	GrpcPort = grpcP
 	Delay = dl
+	NumThread = numThreads
 
 	var err error
-	Application = true
-	//utils2.Vectorclock = utils2.NewVectorClock(4)
-
 	RegClient, err = client1.Connect(registryAddr)
+
+	if debug {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	if err != nil {
 		return err
@@ -137,14 +141,13 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 	members = append(members, group.ClientId)
 
 	connections := make([]*client.Client, len(members))
-	//i := 0
+
 	for i, member := range members {
 		log.Println("Connecting with", members[i])
 		connections[i] = client.Connect(member)
 		if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(port))) {
 			myConn = connections[i]
 		}
-		//i++
 	}
 
 	// Initializing  data structures
@@ -167,7 +170,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 		nodes := VectorClockMulticast.GetNodes()
 		for i := range nodes {
 			if nodes[i].MyConn == myConn {
-				go VectorClockMulticast.Deliver(nodes[i].NodeId, int(Delay)) //B5,B12,C9
+				go VectorClockMulticast.Deliver(nodes[i].NodeId, int(Delay))
 			}
 		}
 	}
@@ -200,7 +203,7 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 	if groupInfo.MulticastType.String() == util.BMULTICAST {
 		log.Println("STARTING BMULTICAST")
 		respChannel := make(chan []byte, 1)
-		pool.Pool.InitThreadPool(connections, 5, util.BMULTICAST, respChannel, port, 0, int(Delay))
+		pool.Pool.InitThreadPool(connections, NumThread, util.BMULTICAST, respChannel, port, 0, int(Delay))
 
 	}
 	if groupInfo.MulticastType.String() == util.SQMULTICAST {
@@ -221,7 +224,7 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 		seq.LocalTimestamp = 0
 		seq.MessageQueue = make([]SQMulticast.MessageSeq, 0, 100)
 		SQMulticast.SetSequencer(*seq)
-		pool.Pool.InitThreadPool(connections, 5, util.SQMULTICAST, nil, port, node.NodeId, int(Delay))
+		pool.Pool.InitThreadPool(connections, NumThread, util.SQMULTICAST, nil, port, node.NodeId, int(Delay))
 		log.Println("The sequencer nodes is at port", seq.SeqPort.Connection.Target())
 	}
 
@@ -240,7 +243,7 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 
 		MulticastScalarClock.AppendNodes(*node)
 
-		pool.Pool.InitThreadPool(connections, 5, util.SCMULTICAST, nil, port, node.NodeId, int(Delay))
+		pool.Pool.InitThreadPool(connections, NumThread, util.SCMULTICAST, nil, port, node.NodeId, int(Delay))
 		go MulticastScalarClock.Receive(node.NodeId, node.NodeId, int(Delay))
 	}
 	if groupInfo.MulticastType.String() == util.VCMULTICAST {
@@ -265,7 +268,7 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 
 		wg.Lock()
 		VectorClockMulticast.AppendNodes(*node, &wg)
-		pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, port, node.NodeId, int(Delay))
+		pool.Pool.InitThreadPool(connections, NumThread, util.VCMULTICAST, nil, port, node.NodeId, int(Delay))
 
 	}
 	return nil
@@ -277,7 +280,7 @@ func ChangeStatus(groupInfo *proto.Group, multicastGroup *MulticastGroup, status
 	var err error
 
 	for groupInfo.Status == status {
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 1)
 		groupInfo, err = RegClient.GetStatus(context.Background(), &proto.MulticastId{MulticastId: groupInfo.MulticastId})
 		if err != nil {
 			return nil, err

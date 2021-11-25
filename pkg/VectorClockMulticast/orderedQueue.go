@@ -24,12 +24,12 @@ func removeForProcessingMessages(slice VectorMessages, s int) VectorMessages {
 
 func (node *NodeVC) AddToProcessingQueue(m *MessageVectorTimestamp, wg *sync.Mutex) {
 	defer wg.Unlock()
-	log.Println("messaggio aggiunto in coda")
+	log.Println("Message added in queue")
 	node.ProcessingMessage = append(node.ProcessingMessage, *m)
 }
 
 func (node *NodeVC) Dequeue() MessageVectorTimestamp {
-	log.Println("prendo il primo elemento della coda")
+	log.Println("Get the first message of the queue")
 	m := node.ProcessingMessage[0]
 	node.ProcessingMessage = removeForProcessingMessages(node.ProcessingMessage, 0)
 	return m

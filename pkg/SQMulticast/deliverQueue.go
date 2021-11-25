@@ -22,9 +22,8 @@ func (a OrderedMessages) Len() int           { return len(a) }
 func (a OrderedMessages) Less(i, j int) bool { return a[i].Timestamp < a[j].Timestamp }
 func (a OrderedMessages) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
-//func che ordina i messaggi in coda
+//Ordering messages queue
 func (node *NodeForSq) OrderingMessage() {
-	//log.Println("riordino i messaggi")
 	sort.Sort(node.DeliverQueue)
 	return
 }
@@ -41,6 +40,7 @@ func (node *NodeForSq) GetMessageToBeDeliverQueue() []*MessageSeq {
 	return node.DeliverQueue
 }
 
+//add a message to deliver queue
 func (node *NodeForSq) AppendMessageToBeDeliver(m *MessageSeq) {
 
 	node.DeliverQueue = append(node.DeliverQueue, m)
