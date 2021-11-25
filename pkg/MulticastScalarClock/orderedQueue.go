@@ -15,7 +15,7 @@ func (a OrderedMessages) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 //func che ordina i messaggi in coda
 func (node *NodeSC) OrderingMessage() {
 	sort.Sort(node.ProcessingMessages)
-	log.Println("ordering messages", node.ProcessingMessages[0].Timestamp)
+	//log.Println("ordering messages", node.ProcessingMessages[0].Timestamp)
 	return
 }
 

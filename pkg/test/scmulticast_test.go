@@ -191,7 +191,7 @@ func TestManyToManySC(t *testing.T) {
 	time.Sleep(time.Second * 120)
 	nodes := MulticastScalarClock.GetNodes()
 	for i := range nodes {
-		assert.Equal(t, 9, len(nodes[i].ProcessingMessages))
+		assert.Equal(t, 9, len(nodes[i].DeliverQueue))
 	}
 	assert.Equal(t, node.DeliverQueue, node2.DeliverQueue)
 	assert.Equal(t, node2.DeliverQueue, node3.DeliverQueue)
