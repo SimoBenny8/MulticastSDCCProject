@@ -108,7 +108,7 @@ func HasMinimumTimestamp(message *MessageTimestamp, nodeId uint) bool {
 		}
 	}
 	//log.Println("count:", count)
-	if count == len(Nodes[pos].Connections) {
+	if count >= len(Nodes[pos].Connections) {
 		log.Println("count:", count)
 		return true
 	}
