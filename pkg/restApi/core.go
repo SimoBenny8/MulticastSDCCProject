@@ -176,6 +176,12 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 	}
 	if groupInfo.MulticastType.String() == util.SQMULTICAST {
 		go SQMulticast.DeliverSeq(int(Delay))
+		nodes := SQMulticast.GetDeliverNodes()
+		for i := range nodes {
+			if nodes[i].MyConn == myConn {
+				go SQMulticast.DeliverMsg(int(Delay), nodes[i].NodeId)
+			}
+		}
 	}
 	if groupInfo.MulticastType.String() == util.SCMULTICAST {
 		nodes := MulticastScalarClock.GetNodes()
@@ -215,6 +221,8 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 		node.Connections = connections
 		node.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 		node.MyConn = myConn
+		node.LocalTimestamp = 0
+		node.ProcessingQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 
 		SQMulticast.AppendNodes(*node)
 		seq := new(SQMulticast.Sequencer)

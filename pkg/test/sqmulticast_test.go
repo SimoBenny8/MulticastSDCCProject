@@ -17,7 +17,7 @@ import (
 func TestOneToManySQ(t *testing.T) {
 	var localErr error
 	var connections []*client2.Client
-	var wg *sync.WaitGroup
+	//var wg *sync.WaitGroup
 
 	delay := 1000
 	numNode := 3
@@ -34,22 +34,30 @@ func TestOneToManySQ(t *testing.T) {
 	node.Connections = connections
 	node.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node.MyConn = connections[0]
+	node.LocalTimestamp = 0
+	node.ProcessingQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 
 	SQMulticast.AppendNodes(*node)
+	go SQMulticast.DeliverMsg(delay, node.NodeId)
 
 	node2 := new(SQMulticast.NodeForSq)
 	node2.NodeId = uint(rand.Intn(100))
 	node2.Connections = connections
 	node2.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node2.MyConn = connections[1]
+	node2.LocalTimestamp = 0
+	node2.ProcessingQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 
 	SQMulticast.AppendNodes(*node2)
+	go SQMulticast.DeliverMsg(delay, node2.NodeId)
 
 	node3 := new(SQMulticast.NodeForSq)
 	node3.NodeId = uint(rand.Intn(100))
 	node3.Connections = connections
 	node3.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node3.MyConn = connections[2]
+	node3.LocalTimestamp = 0
+	node3.ProcessingQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 
 	SQMulticast.AppendNodes(*node3)
 
@@ -60,13 +68,16 @@ func TestOneToManySQ(t *testing.T) {
 	seq.LocalTimestamp = 0
 	seq.MessageQueue = make([]SQMulticast.MessageSeq, 0, 100)
 	SQMulticast.SetSequencer(*seq)
+
 	log.Println("Sequencer is", seq.SeqPort.Connection.Target())
 
 	go SQMulticast.DeliverSeq(delay)
-	//caso invio al sequencer da un nodo generico
+	time.Sleep(time.Second)
+	go SQMulticast.DeliverMsg(delay, node3.NodeId)
 
+	//caso invio al sequencer da un nodo generico
 	for i := range messages {
-		wg.Add(1)
+		//wg.Add(1)
 		for j := range node.Connections {
 			if node.Connections[j].Connection.Target() == seq.SeqPort.Connection.Target() {
 				//caso invio al sequencer da un nodo generico
@@ -81,12 +92,12 @@ func TestOneToManySQ(t *testing.T) {
 						return
 
 					}
-					wg.Done()
+					//wg.Done()
 				}()
 
 			}
 		}
-		wg.Wait()
+		//wg.Wait()
 
 	}
 
@@ -123,6 +134,8 @@ func TestManyToManySQ(t *testing.T) {
 	node.Connections = connections
 	node.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node.MyConn = connections[0]
+	node.LocalTimestamp = 0
+	node.ProcessingQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 
 	SQMulticast.AppendNodes(*node)
 
@@ -131,6 +144,8 @@ func TestManyToManySQ(t *testing.T) {
 	node2.Connections = connections
 	node2.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node2.MyConn = connections[1]
+	node2.LocalTimestamp = 0
+	node2.ProcessingQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 
 	SQMulticast.AppendNodes(*node2)
 
@@ -139,6 +154,8 @@ func TestManyToManySQ(t *testing.T) {
 	node3.Connections = connections
 	node3.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node3.MyConn = connections[2]
+	node3.LocalTimestamp = 0
+	node3.ProcessingQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 
 	SQMulticast.AppendNodes(*node3)
 
@@ -152,6 +169,9 @@ func TestManyToManySQ(t *testing.T) {
 	log.Println("Sequencer is", seq.SeqPort.Connection.Target())
 
 	go SQMulticast.DeliverSeq(delay)
+	go SQMulticast.DeliverMsg(delay, node.NodeId)
+	go SQMulticast.DeliverMsg(delay, node2.NodeId)
+	go SQMulticast.DeliverMsg(delay, node3.NodeId)
 	//caso invio al sequencer da un nodo generico
 
 	for i := range messages {
