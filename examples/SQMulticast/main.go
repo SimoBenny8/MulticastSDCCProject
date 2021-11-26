@@ -62,8 +62,11 @@ func main() {
 	node.Connections = connections
 	node.DeliverQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 	node.MyConn = myConn
+	node.LocalTimestamp = 0
+	node.ProcessingQueue = make([]*SQMulticast.MessageSeq, 0, 100)
 
 	SQMulticast.AppendNodes(*node)
+	go SQMulticast.DeliverMsg(int(*delay), node.NodeId)
 
 	seq := new(SQMulticast.Sequencer)
 	seq.Node = *node

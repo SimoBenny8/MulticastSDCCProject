@@ -1,20 +1,12 @@
 package SQMulticast
 
 import (
-	"github.com/SimoBenny8/MulticastSDCCProject/pkg/endToEnd/client"
 	"sort"
 )
 
 var (
 	Nodes []NodeForSq
 )
-
-type NodeForSq struct {
-	NodeId       uint
-	Connections  []*client.Client
-	DeliverQueue OrderedMessages
-	MyConn       *client.Client
-}
 
 type OrderedMessages []*MessageSeq
 
@@ -23,8 +15,8 @@ func (a OrderedMessages) Less(i, j int) bool { return a[i].Timestamp < a[j].Time
 func (a OrderedMessages) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 //Ordering messages queue
-func (node *NodeForSq) OrderingMessage() {
-	sort.Sort(node.DeliverQueue)
+func (node *NodeForSq) OrderingMessage(slice OrderedMessages) {
+	sort.Sort(slice)
 	return
 }
 
@@ -41,10 +33,17 @@ func (node *NodeForSq) GetMessageToBeDeliverQueue() []*MessageSeq {
 }
 
 //add a message to deliver queue
-func (node *NodeForSq) AppendMessageToBeDeliver(m *MessageSeq) {
+func (node *NodeForSq) AppendMessageDelivered(m *MessageSeq) {
 
 	node.DeliverQueue = append(node.DeliverQueue, m)
-	node.OrderingMessage()
+	node.OrderingMessage(node.DeliverQueue)
+}
+
+//add a message to processing queue
+func (node *NodeForSq) AppendMessageToBeDeliver(m *MessageSeq) {
+
+	node.ProcessingQueue = append(node.ProcessingQueue, m)
+	node.OrderingMessage(node.ProcessingQueue)
 }
 
 func AppendNodes(node NodeForSq) {
