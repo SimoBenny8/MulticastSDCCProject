@@ -88,9 +88,11 @@ func (s *Server) SendPacket(ctx context.Context, message *rpc.Packet) (*rpc.Resp
 		group.Messages = append(group.Messages, msgh)
 	}
 	if strings.Contains(string(message.Header), "closeGroup") {
-		strArr := strings.SplitAfter(string(message.Message), ":")
+		strArr := strings.SplitAfter(string(message.Header), ":")
 		mid := strArr[len(strArr)-1]
 		group := restApi.MulticastGroups[mid]
+		group.MessageMu.Lock()
+		defer group.MessageMu.Unlock()
 		groupInfo, err := restApi.RegClient.CloseGroup(context.Background(), &proto.RequestData{
 			MulticastId: mid,
 			ClientId:    group.ClientId,

@@ -173,13 +173,13 @@ func closeGroup(c *gin.Context) {
 	GMu.RLock()
 	defer GMu.RUnlock()
 
-	group, ok := MulticastGroups[mId]
+	_, ok := MulticastGroups[mId]
 
 	if !ok {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": "group not found"})
 	}
 
-	pool.Pool.Message <- &rpc.Packet{Header: []byte("closeGroup:mId:" + mId), Message: []byte("closeGroup:" + group.Group.MulticastId)}
+	pool.Pool.Message <- &rpc.Packet{Header: []byte("closeGroup:mId:" + mId), Message: []byte("closeGroup")}
 
 }
 
