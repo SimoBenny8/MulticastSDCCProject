@@ -275,8 +275,8 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 		node.MyNode = myNode
 		node.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 
-		wg.Lock()
-		VectorClockMulticast.AppendNodes(*node, &wg)
+		//wg.Lock()
+		VectorClockMulticast.AppendNodes(*node)
 		pool.Pool.InitThreadPool(connections, NumThread, util.VCMULTICAST, nil, port, node.NodeId, int(Delay))
 
 	}
