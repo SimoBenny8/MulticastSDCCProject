@@ -29,8 +29,8 @@ func TestStartGroup(t *testing.T) {
 func AddGroupTesting(host string) {
 
 	obj := restApi.MulticastReq{
-		MulticastId:   "SC",
-		MulticastType: util.SCMULTICAST,
+		MulticastId:   "VC",
+		MulticastType: util.VCMULTICAST,
 	}
 	jsn, _ := json.Marshal(obj)
 	url := "http://localhost:" + host + "/multicast/v1/groups"
@@ -62,7 +62,7 @@ func AddGroupTesting(host string) {
 }
 
 func StartGroupTesting(host string) {
-	url := "http://localhost:" + host + "/multicast/v1/groups/" + "SC"
+	url := "http://localhost:" + host + "/multicast/v1/groups/" + "VC"
 	method := "PUT"
 
 	client := &http.Client{}
@@ -90,7 +90,7 @@ func StartGroupTesting(host string) {
 }
 
 func TestGetInfoGroup(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "SC"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "VC"
 	method := "GET"
 
 	client := &http.Client{}
@@ -118,7 +118,7 @@ func TestGetInfoGroup(t *testing.T) {
 }
 
 func TestCloseGroup(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "SC"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "VC"
 	method := "DELETE"
 
 	client := &http.Client{}
@@ -151,9 +151,9 @@ func TestCloseGroup(t *testing.T) {
 }
 
 func TestSendMessage(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/messages/" + "SC"
+	url := "http://localhost:" + "8082" + "/multicast/v1/groups/messages/" + "VC"
 	method := "POST"
-	m := []byte("message")
+	m := []byte("message2")
 
 	obj := restApi.Message{Payload: m}
 	jsonMessage, _ := json.Marshal(obj)
@@ -188,7 +188,7 @@ func TestSendMessage(t *testing.T) {
 }
 
 func TestGetMessages(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/messages/" + "SC"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/messages/" + "VC"
 	method := "GET"
 
 	client := &http.Client{}
@@ -216,7 +216,7 @@ func TestGetMessages(t *testing.T) {
 }
 
 func TestGetDeliverQueue(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/deliverQueue/" + "SC"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/deliverQueue/" + "VC"
 	method := "GET"
 
 	client := &http.Client{}
