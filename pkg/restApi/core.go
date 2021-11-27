@@ -273,6 +273,7 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 		node.DeliverQueue = make(VectorClockMulticast.VectorMessages, 0, 100)
 		node.MyConn = myConn
 		node.MyNode = myNode
+		node.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 
 		wg.Lock()
 		VectorClockMulticast.AppendNodes(*node, &wg)
