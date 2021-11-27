@@ -76,8 +76,8 @@ func main() {
 	node.MyNode = myNode
 	node.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 
-	wg.Lock()
-	VectorClockMulticast.AppendNodes(*node, &wg)
+	//wg.Lock()
+	VectorClockMulticast.AppendNodes(*node)
 
 	pool.Pool.InitThreadPool(connections, 5, util.VCMULTICAST, nil, *port, node.NodeId, int(*delay))
 	go VectorClockMulticast.Deliver(node.NodeId, int(*delay))

@@ -30,9 +30,9 @@ func checkPositionNode(id uint) int {
 	return -1
 }
 
-func AppendNodes(node NodeVC, wg *sync.Mutex) {
+func AppendNodes(node NodeVC) {
 	Nodes = append(Nodes, node)
-	wg.Unlock()
+	//wg.Unlock()
 }
 
 func (node *NodeVC) AppendDeliverQueue(mex *rpc.Packet) {
