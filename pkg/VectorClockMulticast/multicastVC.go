@@ -168,7 +168,6 @@ func Deliver(nodeId uint, delay int) {
 			md[util.TIMESTAMPMESSAGE] = util.EMPTY
 			md[util.DELIVER] = util.TRUE
 			md[util.NODEID] = strconv.Itoa(int(Nodes[pos].NodeId))
-			md[util.RECEIVER] = Nodes[pos].MyConn.Connection.Target()
 			index := indexSender(&message, Nodes[pos].NodeId)
 			for i := range message.Timestamp {
 				Nodes[pos].Timestamp[i] = int(math.Max(float64(message.Timestamp[i]), float64(Nodes[pos].Timestamp[i])))
