@@ -72,16 +72,18 @@ var (
 	MulticastGroups map[string]*MulticastGroup
 	GrpcPort        uint
 	NumThread       int
+	MyPort          string
 )
 
 func init() {
 	MulticastGroups = make(map[string]*MulticastGroup)
 }
 
-func Run(grpcP uint, restPort uint, registryAddr, relativePath string, numThreads int, dl uint, debug bool) error {
+func Run(grpcP uint, restPort uint, registryAddr, relativePath string, numThreads int, dl uint, debug bool, myPort string) error {
 	GrpcPort = grpcP
 	Delay = dl
 	NumThread = numThreads
+	MyPort = myPort
 
 	var err error
 	RegClient, err = client1.Connect(registryAddr)
@@ -145,9 +147,10 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 	for i, member := range members {
 		log.Println("Connecting with", members[i])
 		connections[i] = client.Connect(member)
-		if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(port))) {
+		if strings.Contains(connections[i].Connection.Target(), MyPort) {
 			myConn = connections[i]
 			myNode = int32(i)
+			log.Println("my index: ", myNode)
 		}
 	}
 
@@ -236,6 +239,7 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 		seq.LocalTimestamp = 0
 		seq.MessageQueue = make([]SQMulticast.MessageSeq, 0, 100)
 		SQMulticast.SetSequencer(*seq)
+
 		pool.Pool.InitThreadPool(connections, NumThread, util.SQMULTICAST, nil, port, node.NodeId, int(Delay))
 		log.Println("The sequencer nodes is at port", seq.SeqPort.Connection.Target())
 	}
@@ -261,12 +265,6 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 	if groupInfo.MulticastType.String() == util.VCMULTICAST {
 		log.Println("STARTING VCMULTICAST")
 		var wg sync.Mutex
-
-		for i := range connections {
-			if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(port))) {
-				log.Println("my index: ", myNode)
-			}
-		}
 
 		node := new(VectorClockMulticast.NodeVC)
 		wg.Lock()
