@@ -42,6 +42,7 @@ func main() {
 	log.Println("start services")
 
 	myPort, err = os.Hostname()
+	log.Println("IP:", myPort)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
