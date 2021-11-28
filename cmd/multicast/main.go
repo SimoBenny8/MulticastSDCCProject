@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	server2 "github.com/SimoBenny8/MulticastSDCCProject/pkg/ServiceRegistry/server"
@@ -10,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
-	"os"
 	"sync"
 )
 
@@ -41,11 +41,19 @@ func main() {
 	}
 	log.Println("start services")
 
-	myPort, err = os.Hostname()
-	log.Println("IP:", myPort)
+	//myPort, err = os.Hostname()
+	//log.Println("IP:", myPort)
+	//if err != nil {
+	//	log.Fatal(err.Error())
+	//}
+	ip, err := externalIP()
+	myPort = ip
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	log.Println("IP :", ip)
+
+	//container := client2.ContainerInspect(context.Background(), id)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -97,4 +105,41 @@ func main() {
 	case <-wgChan:
 	}
 
+}
+
+func externalIP() (string, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 {
+			continue // interface down
+		}
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue // loopback interface
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return "", err
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue // not an ipv4 address
+			}
+			return ip.String(), nil
+		}
+	}
+	return "", errors.New("are you connected to the network?")
 }
