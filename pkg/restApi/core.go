@@ -120,7 +120,7 @@ func (r routes) addGroups(rg *gin.RouterGroup) {
 func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 
 	var myConn *client.Client
-
+	var myNode int32
 	log.Println("Waiting for the group to be ready")
 
 	update(info, group)
@@ -147,11 +147,12 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 		connections[i] = client.Connect(member)
 		if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(port))) {
 			myConn = connections[i]
+			myNode = int32(i)
 		}
 	}
 
 	// Initializing  data structures
-	err = initGroupCommunication(info, port, connections, myConn)
+	err = initGroupCommunication(info, port, connections, myConn, myNode)
 
 	if err != nil {
 		return
@@ -170,6 +171,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 		nodes := VectorClockMulticast.GetNodes()
 		for i := range nodes {
 			if nodes[i].MyConn == myConn {
+				log.Println("Starting Deliver Go Routine for VCMulticast")
 				go VectorClockMulticast.Deliver(nodes[i].NodeId, int(Delay))
 			}
 		}
@@ -179,6 +181,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 		nodes := SQMulticast.GetDeliverNodes()
 		for i := range nodes {
 			if nodes[i].MyConn == myConn {
+				log.Println("Starting Deliver Go Routine for SQMulticast")
 				go SQMulticast.DeliverMsg(int(Delay), nodes[i].NodeId)
 			}
 		}
@@ -187,6 +190,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 		nodes := MulticastScalarClock.GetNodes()
 		for i := range nodes {
 			if nodes[i].MyConn == myConn {
+				log.Println("Starting Deliver Go Routine for SCMulticast")
 				go MulticastScalarClock.Deliver(len(connections), nodes[i].NodeId, int(Delay))
 			}
 		}
@@ -204,7 +208,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 }
 
 //Start communication
-func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*client.Client, myConn *client.Client) error {
+func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*client.Client, myConn *client.Client, myNode int32) error {
 
 	if groupInfo.MulticastType.String() == util.BMULTICAST {
 		log.Println("STARTING BMULTICAST")
@@ -257,10 +261,9 @@ func initGroupCommunication(groupInfo *proto.Group, port uint, connections []*cl
 	if groupInfo.MulticastType.String() == util.VCMULTICAST {
 		log.Println("STARTING VCMULTICAST")
 		var wg sync.Mutex
-		var myNode int32
+
 		for i := range connections {
 			if strings.Contains(connections[i].Connection.Target(), strconv.Itoa(int(port))) {
-				myNode = int32(i)
 				log.Println("my index: ", myNode)
 			}
 		}

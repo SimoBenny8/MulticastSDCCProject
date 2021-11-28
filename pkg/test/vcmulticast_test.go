@@ -41,8 +41,8 @@ func TestOneToManyVC(t *testing.T) {
 	node.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 	node.MyNode = 0
 
-	wg.Lock()
-	VectorClockMulticast.AppendNodes(*node, &wg)
+	//wg.Lock()
+	VectorClockMulticast.AppendNodes(*node)
 	go VectorClockMulticast.Deliver(node.NodeId, delay)
 
 	node2 := new(VectorClockMulticast.NodeVC)
@@ -55,8 +55,8 @@ func TestOneToManyVC(t *testing.T) {
 	node2.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 	node2.MyNode = 1
 
-	wg.Lock()
-	VectorClockMulticast.AppendNodes(*node2, &wg)
+	//wg.Lock()
+	VectorClockMulticast.AppendNodes(*node2)
 	go VectorClockMulticast.Deliver(node2.NodeId, delay)
 
 	node3 := new(VectorClockMulticast.NodeVC)
@@ -69,8 +69,8 @@ func TestOneToManyVC(t *testing.T) {
 	node3.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 	node3.MyNode = 2
 
-	wg.Lock()
-	VectorClockMulticast.AppendNodes(*node3, &wg)
+	//wg.Lock()
+	VectorClockMulticast.AppendNodes(*node3)
 	go VectorClockMulticast.Deliver(node3.NodeId, delay)
 
 	for i := range messages {
@@ -132,8 +132,8 @@ func TestManyToManyVC(t *testing.T) {
 	node.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 	node.MyNode = 0
 
-	wg.Lock()
-	VectorClockMulticast.AppendNodes(*node, &wg)
+	//wg.Lock()
+	VectorClockMulticast.AppendNodes(*node)
 	go VectorClockMulticast.Deliver(node.NodeId, delay)
 
 	node2 := new(VectorClockMulticast.NodeVC)
@@ -146,8 +146,8 @@ func TestManyToManyVC(t *testing.T) {
 	node2.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 	node2.MyNode = 1
 
-	wg.Lock()
-	VectorClockMulticast.AppendNodes(*node2, &wg)
+	//wg.Lock()
+	VectorClockMulticast.AppendNodes(*node2)
 	go VectorClockMulticast.Deliver(node2.NodeId, delay)
 
 	node3 := new(VectorClockMulticast.NodeVC)
@@ -160,8 +160,8 @@ func TestManyToManyVC(t *testing.T) {
 	node3.ProcessingMessage = make(VectorClockMulticast.VectorMessages, 0, 100)
 	node3.MyNode = 2
 
-	wg.Lock()
-	VectorClockMulticast.AppendNodes(*node3, &wg)
+	//wg.Lock()
+	VectorClockMulticast.AppendNodes(*node3)
 	go VectorClockMulticast.Deliver(node3.NodeId, delay)
 
 	m1 := func(wg2 *sync.WaitGroup) {
