@@ -7,7 +7,9 @@ import (
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/util"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 )
@@ -120,7 +122,7 @@ func TestGetInfoGroup(t *testing.T) {
 func TestCloseGroup(t *testing.T) {
 	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "VC"
 	method := "DELETE"
-
+	log.Println(os.Hostname())
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, nil)
 

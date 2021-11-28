@@ -159,8 +159,8 @@ func Deliver(nodeId uint, delay int) {
 	for {
 		if len(Nodes[pos].ProcessingMessage) > 0 && nextMessageTimestamp(&Nodes[pos].ProcessingMessage[0], Nodes[pos].NodeId) && HasSameNumberMessage(&Nodes[pos].ProcessingMessage[0], Nodes[pos].NodeId) {
 			message := Nodes[pos].Dequeue()
-			var wg sync.Mutex
-			wg.Lock()
+			//var wg sync.Mutex
+			//wg.Lock()
 			var LocalErr error
 			md := make(map[string]string)
 			md[util.TYPEMC] = util.VCMULTICAST
@@ -178,8 +178,7 @@ func Deliver(nodeId uint, delay int) {
 				log.Printf("Error marshalling: %s", err)
 				return
 			}
-			go func(wg *sync.Mutex) {
-				defer wg.Unlock()
+			go func() {
 				LocalErr = Nodes[pos].MyConn.Send(md, []byte(Nodes[pos].MyConn.Connection.Target()+":"), b, nil, delay)
 				if LocalErr != nil {
 					log.Println(LocalErr.Error())
@@ -188,7 +187,7 @@ func Deliver(nodeId uint, delay int) {
 					wg2.Lock()
 					Nodes[pos].AddToProcessingQueue(&message, &wg2)
 				}
-			}(&wg)
+			}()
 
 		}
 	}
