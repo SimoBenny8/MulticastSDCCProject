@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"strings"
 	"sync"
 )
 
@@ -25,6 +26,7 @@ func main() {
 	r := flag.Bool("registry", util.GetEnvBoolWithDefault("REGISTRY", false), "start multicast registry")
 	application := flag.Bool("application", util.GetEnvBoolWithDefault("APP", false), "start multicast application")
 
+	var myPort []string
 	flag.Parse()
 	services := make([]func(registrar grpc.ServiceRegistrar) error, 0)
 
@@ -42,6 +44,7 @@ func main() {
 
 	go func() {
 		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *grpcPort))
+		myPort = strings.SplitAfter(lis.Addr().String(), ".")
 		if err != nil {
 			return
 		}
@@ -66,7 +69,7 @@ func main() {
 
 		wg.Add(1)
 		go func() {
-			err := restApi.Run(*grpcPort, *restPort, *registryAddr, *restPath, int(*numThreads), *delay, *verb)
+			err := restApi.Run(*grpcPort, *restPort, *registryAddr, *restPath, int(*numThreads), *delay, *verb, myPort[len(myPort)-1])
 			if err != nil {
 				log.Println("Error in running application", err.Error())
 				return
