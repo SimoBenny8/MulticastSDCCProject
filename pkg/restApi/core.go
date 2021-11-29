@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/context"
 	"log"
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -119,6 +120,11 @@ func (r routes) addGroups(rg *gin.RouterGroup) {
 	groups.GET("/deliverQueue/:mId", getDeliverQueue)
 }
 
+func getLastByteIp(str string) int {
+	s := strings.Split(str, ":")
+	return len(s[0]) - 2
+}
+
 func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 
 	var myConn *client.Client
@@ -142,11 +148,21 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 	}
 	members = append(members, group.ClientId)
 
+	sort.Slice(members, func(i, j int) bool {
+		num := getLastByteIp(members[i])
+		if members[i][:num] != members[j][:num] {
+			return members[i] < members[j]
+		}
+		ii, _ := strconv.Atoi(members[i][num:])
+		jj, _ := strconv.Atoi(members[j][num:])
+		return ii < jj
+	})
+
 	connections := make([]*client.Client, len(members))
 
-	for i, member := range members {
+	for i, _ := range members {
 		log.Println("Connecting with", members[i])
-		connections[i] = client.Connect(member)
+		connections[i] = client.Connect(members[i])
 		if strings.Contains(connections[i].Connection.Target(), MyPort) {
 			log.Println("connections: ", connections[i].Connection.Target(), " port: ", MyPort)
 			myConn = connections[i]
