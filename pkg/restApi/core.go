@@ -147,21 +147,16 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 		}
 	}
 	members = append(members, group.ClientId)
-	log.Println("Members before", members)
 
-	sort.SliceStable(members, func(i, j int) bool {
+	sort.Slice(members, func(i, j int) bool {
 		num := getLastByteIp(members[i])
-		log.Println("Members Num: ", members[i][:num])
-		if members[i][:num] != members[j][:num] {
-			log.Println("splitting", members[i], members[j])
+		if members[i][num] != members[j][num] {
 			return members[i] < members[j]
 		}
 		ii, _ := strconv.Atoi(members[i][num:])
 		jj, _ := strconv.Atoi(members[j][num:])
-		log.Println("called Sort slice")
 		return ii < jj
 	})
-	log.Println("Members after", members)
 
 	connections := make([]*client.Client, len(members))
 
