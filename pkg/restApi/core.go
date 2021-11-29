@@ -148,6 +148,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 		log.Println("Connecting with", members[i])
 		connections[i] = client.Connect(member)
 		if strings.Contains(connections[i].Connection.Target(), MyPort) {
+			log.Println("connections: ", connections[i].Connection.Target(), " port: ", MyPort)
 			myConn = connections[i]
 			myNode = int32(i)
 			log.Println("my index: ", myNode)
