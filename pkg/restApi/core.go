@@ -122,7 +122,7 @@ func (r routes) addGroups(rg *gin.RouterGroup) {
 
 func getLastByteIp(str string) int {
 	s := strings.Split(str, ":")
-	return len(s[0]) - 2
+	return len(s[0]) - 1
 }
 
 func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
