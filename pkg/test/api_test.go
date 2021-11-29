@@ -31,8 +31,8 @@ func TestStartGroup(t *testing.T) {
 func AddGroupTesting(host string) {
 
 	obj := restApi.MulticastReq{
-		MulticastId:   "VC",
-		MulticastType: util.VCMULTICAST,
+		MulticastId:   "SC",
+		MulticastType: util.SCMULTICAST,
 	}
 	jsn, _ := json.Marshal(obj)
 	url := "http://localhost:" + host + "/multicast/v1/groups"
@@ -64,7 +64,7 @@ func AddGroupTesting(host string) {
 }
 
 func StartGroupTesting(host string) {
-	url := "http://localhost:" + host + "/multicast/v1/groups/" + "VC"
+	url := "http://localhost:" + host + "/multicast/v1/groups/" + "SC"
 	method := "PUT"
 
 	client := &http.Client{}
@@ -92,7 +92,7 @@ func StartGroupTesting(host string) {
 }
 
 func TestGetInfoGroup(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "VC"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "SC"
 	method := "GET"
 
 	client := &http.Client{}
@@ -120,7 +120,7 @@ func TestGetInfoGroup(t *testing.T) {
 }
 
 func TestCloseGroup(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "VC"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/" + "SC"
 	method := "DELETE"
 	log.Println(os.Hostname())
 	client := &http.Client{}
@@ -153,7 +153,7 @@ func TestCloseGroup(t *testing.T) {
 }
 
 func TestSendMessage(t *testing.T) {
-	url := "http://localhost:" + "8081" + "/multicast/v1/groups/messages/" + "VC"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/messages/" + "SC"
 	method := "POST"
 	m := []byte("message2")
 
@@ -190,7 +190,7 @@ func TestSendMessage(t *testing.T) {
 }
 
 func TestGetMessages(t *testing.T) {
-	url := "http://localhost:" + "8080" + "/multicast/v1/groups/messages/" + "VC"
+	url := "http://localhost:" + "8080" + "/multicast/v1/groups/messages/" + "SC"
 	method := "GET"
 
 	client := &http.Client{}
