@@ -2,6 +2,7 @@ package VectorClockMulticast
 
 import (
 	"github.com/SimoBenny8/MulticastSDCCProject/pkg/rpc"
+	"sort"
 	"sync"
 )
 
@@ -32,6 +33,9 @@ func checkPositionNode(id uint) int {
 
 func AppendNodes(node NodeVC) {
 	Nodes = append(Nodes, node)
+	sort.Slice(Nodes[:], func(i, j int) bool {
+		return Nodes[i].MyNode < Nodes[j].MyNode
+	})
 	//wg.Unlock()
 }
 

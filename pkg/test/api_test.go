@@ -153,7 +153,7 @@ func TestCloseGroup(t *testing.T) {
 }
 
 func TestSendMessage(t *testing.T) {
-	url := "http://localhost:" + "8082" + "/multicast/v1/groups/messages/" + "VC"
+	url := "http://localhost:" + "8081" + "/multicast/v1/groups/messages/" + "VC"
 	method := "POST"
 	m := []byte("message2")
 
