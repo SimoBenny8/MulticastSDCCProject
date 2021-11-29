@@ -150,11 +150,14 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 
 	sort.Slice(members, func(i, j int) bool {
 		num := getLastByteIp(members[i])
+		log.Println("Num: ", num)
 		if members[i][:num] != members[j][:num] {
+			log.Println("splitting", members[i], members[j])
 			return members[i] < members[j]
 		}
 		ii, _ := strconv.Atoi(members[i][num:])
 		jj, _ := strconv.Atoi(members[j][num:])
+		log.Println("called Sort slice")
 		return ii < jj
 	})
 
@@ -164,7 +167,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 		log.Println("Connecting with", members[i])
 		connections[i] = client.Connect(members[i])
 		if strings.Contains(connections[i].Connection.Target(), MyPort) {
-			log.Println("connections: ", connections[i].Connection.Target(), " port: ", MyPort)
+			log.Println("Connections: ", connections[i].Connection.Target(), " port: ", MyPort)
 			myConn = connections[i]
 			myNode = int32(i)
 			log.Println("my index: ", myNode)
