@@ -151,7 +151,7 @@ func InitGroup(info *proto.Group, group *MulticastGroup, port uint) {
 
 	sort.SliceStable(members, func(i, j int) bool {
 		num := getLastByteIp(members[i])
-		log.Println("Num: ", num)
+		log.Println("Members Num: ", members[i][:num])
 		if members[i][:num] != members[j][:num] {
 			log.Println("splitting", members[i], members[j])
 			return members[i] < members[j]
